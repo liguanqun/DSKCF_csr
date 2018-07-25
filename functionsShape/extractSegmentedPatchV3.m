@@ -1,5 +1,5 @@
 function [ reshapedSegmentedMask, insidePatchIndexes, finalSegmentedMask] = ...
-    extractSegmentedPatchV3( segmentedMask,outOfBoundSize,centralPoint, shapeDSKCF_struct,maxSize )
+    extractSegmentedPatchV3( segmentedMask,outOfBoundSize,centralPoint, shape_struct,maxSize )
 % EXTRACTSEGMENTEDPATCHV3.m function manage the alignment of segmented
 % patches to accumulate object binary masks as in [1]
 %
@@ -24,18 +24,7 @@ function [ reshapedSegmentedMask, insidePatchIndexes, finalSegmentedMask] = ...
 %   -finalSegmentedMask a copy of input segmentedMask
 %
 %  See also INITDSKCFSHAPE, ADDSEGMENTATIONRESULTS
-%
-%
-%  [1] S. Hannuna, M. Camplani, J. Hall, M. Mirmehdi, D. Damen, T.
-%  Burghardt, A. Paiement, L. Tao, DS-KCF: A real-time tracker for RGB-D
-%  data, Journal of Real-Time Image Processing
-%
-%
-%  University of Bristol
-%  Massimo Camplani and Sion Hannuna
-%
-%  massimo.camplani@bristol.ac.uk
-%  hannuna@compsci.bristol.ac.uk
+
 
 stPointX=1;
 stPointY=1;
@@ -51,10 +40,10 @@ endPointXMask=size(segmentedMask,2);
 segmentedMask(round(endPointYMask*0.85):end,round(endPointXMask*0.60):end)=0;
 segmentedMask(round(endPointYMask*0.85):end,1:round(endPointXMask*0.4))=0;
 
-if(isempty(shapeDSKCF_struct.cumulativeMask))
+if(isempty(shape_struct.cumulativeMask))
     cumulativeSize=outOfBoundSize;
 else
-    cumulativeSize=size(shapeDSKCF_struct.cumulativeMask);
+    cumulativeSize=size(shape_struct.cumulativeMask);
 end
 
 if(size(segmentedMask)==cumulativeSize)

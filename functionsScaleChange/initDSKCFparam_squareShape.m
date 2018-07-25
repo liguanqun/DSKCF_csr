@@ -1,4 +1,4 @@
-function scaleDSKCF_struct=initDSKCFparam_squareShape(DSKCFparameters,target_sz,target_szSquared,pos)
+function scale_struct=initDSKCFparam_squareShape(DSKpara,target_sz,target_szSquared,pos)
 % INITDSKCFPARAM.m initializes the scale data structure for DS-KCF tracker [1]
 % 
 %   INITDSKCFPARAM function initializes the scale data structure of the
@@ -46,39 +46,39 @@ function scaleDSKCF_struct=initDSKCFparam_squareShape(DSKCFparameters,target_sz,
 %  massimo.camplani@bristol.ac.uk 
 %  hannuna@compsci.bristol.ac.uk
 
-scaleDSKCF_struct=[];
+scale_struct=[];
 
 % Find initial scale
-scaleDSKCF_struct.i = find(DSKCFparameters.scales == 1);
-scaleDSKCF_struct.iPrev = scaleDSKCF_struct.i; % for inerpolating model
-scaleDSKCF_struct.minStep = min(abs(diff(DSKCFparameters.scales)));
-scaleDSKCF_struct.scales = DSKCFparameters.scales;
-scaleDSKCF_struct.step = min(diff(DSKCFparameters.scales)); % use smallest step to decide whether to look at other scales
-scaleDSKCF_struct.updated = 0;
-scaleDSKCF_struct.currDepth = 1;
-scaleDSKCF_struct.InitialDepth = 1;
-scaleDSKCF_struct.InitialTargetSize = target_sz;
-scaleDSKCF_struct.InitialTargetSizeSquared = target_szSquared;
+scale_struct.i = find(DSKpara.scales == 1);
+scale_struct.iPrev = scale_struct.i; % for inerpolating model
+scale_struct.minStep = min(abs(diff(DSKpara.scales)));
+scale_struct.scales = DSKpara.scales;
+scale_struct.step = min(diff(DSKpara.scales)); % use smallest step to decide whether to look at other scales
+scale_struct.updated = 0;
+scale_struct.currDepth = 1;
+scale_struct.InitialDepth = 1;
+scale_struct.InitialTargetSize = target_sz;
+scale_struct.InitialTargetSizeSquared = target_szSquared;
 
 
-for i=1:length(DSKCFparameters.scales)
-    scaleDSKCF_struct.windows_sizes(i).window_sz = round(DSKCFparameters.window_sz * DSKCFparameters.scales(i));
-    scaleDSKCF_struct.target_sz(i).target_sz = round(target_sz * DSKCFparameters.scales(i));
-    scaleDSKCF_struct.target_szSquared(i).target_szSquared = round(target_szSquared * DSKCFparameters.scales(i));
-    scaleDSKCF_struct.pos(i).pos = pos;
+for i=1:length(DSKpara.scales)
+    scale_struct.windows_sizes(i).window_sz = round(DSKpara.window_sz * DSKpara.scales(i));
+    scale_struct.target_sz(i).target_sz = round(target_sz * DSKpara.scales(i));
+    scale_struct.target_szSquared(i).target_szSquared = round(target_szSquared * DSKpara.scales(i));
+    scale_struct.pos(i).pos = pos;
     
     %create regression labels, gaussian shaped, with a bandwidth
     %proportional to target size
     %KEEEEEP THE SAME SIGMA....
     %scaleDSKCF_struct.output_sigmas(i).output_sigma = sqrt(prod(scaleDSKCF_struct.target_sz(i).target_sz)) * DSKCFparameters.output_sigma_factor / DSKCFparameters.cell_size;
     %DONT KEEP
-    scaleDSKCF_struct.output_sigmas(i).output_sigma = sqrt(prod(scaleDSKCF_struct.target_szSquared(i).target_szSquared)) * DSKCFparameters.output_sigma_factor / DSKCFparameters.cell_size;
-    scaleDSKCF_struct.yfs(i).yf = fft2(gaussian_shaped_labels( scaleDSKCF_struct.output_sigmas(i).output_sigma, floor( scaleDSKCF_struct.windows_sizes(i).window_sz / DSKCFparameters.cell_size)));
+    scale_struct.output_sigmas(i).output_sigma = sqrt(prod(scale_struct.target_szSquared(i).target_szSquared)) * DSKpara.output_sigma_factor / DSKpara.cell_size;
+    scale_struct.yfs(i).yf = fft2(gaussian_shaped_labels( scale_struct.output_sigmas(i).output_sigma, floor( scale_struct.windows_sizes(i).window_sz / DSKpara.cell_size)));
     
     %store pre-computed cosine window
-    scaleDSKCF_struct.cos_windows(i).cos_window = hann(size(scaleDSKCF_struct.yfs(i).yf,1)) * hann(size(scaleDSKCF_struct.yfs(i).yf,2))';
-    scaleDSKCF_struct.lens(i).len = scaleDSKCF_struct.target_sz(i).target_sz(1) * scaleDSKCF_struct.target_sz(i).target_sz(2);
-    scaleDSKCF_struct.inds(i).ind = floor(linspace(1,scaleDSKCF_struct.lens(i).len, round(0.25 * scaleDSKCF_struct.lens(i).len)));
+    scale_struct.cos_windows(i).cos_window = hann(size(scale_struct.yfs(i).yf,1)) * hann(size(scale_struct.yfs(i).yf,2))';
+    scale_struct.lens(i).len = scale_struct.target_sz(i).target_sz(1) * scale_struct.target_sz(i).target_sz(2);
+    scale_struct.inds(i).ind = floor(linspace(1,scale_struct.lens(i).len, round(0.25 * scale_struct.lens(i).len)));
 end
 
-scaleDSKCF_struct.prevpos=pos;
+scale_struct.prevpos=pos;

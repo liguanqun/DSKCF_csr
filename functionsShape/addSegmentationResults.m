@@ -1,4 +1,4 @@
-function [ dskcfShapeStruct ] = addSegmentationResults( dskcfShapeStruct,lastMask,tmpBB,trackOffset,imSize)
+function [ shape_struct ] = addSegmentationResults( shape_struct,lastMask,tmpBB,trackOffset,imSize)
 % ADDSEGMENTATIONRESULTS.m function manage the alignment of segmented
 % patches to accumulate object binary masks as in [1]
 %
@@ -36,30 +36,30 @@ function [ dskcfShapeStruct ] = addSegmentationResults( dskcfShapeStruct,lastMas
 %  massimo.camplani@bristol.ac.uk
 %  hannuna@compsci.bristol.ac.uk
 
-dskcfShapeStruct.lastSegmentedBB=tmpBB;
+shape_struct.lastSegmentedBB=tmpBB;
 
-if(isempty(dskcfShapeStruct.cumulativeBB))
+if(isempty(shape_struct.cumulativeBB))
     
-    dskcfShapeStruct.cumulativeBB=dskcfShapeStruct.lastSegmentedBB;
-    dskcfShapeStruct.maskArray=cat(3,dskcfShapeStruct.maskArray,lastMask);
-    dskcfShapeStruct.cumulativeMask=lastMask;
+    shape_struct.cumulativeBB=shape_struct.lastSegmentedBB;
+    shape_struct.maskArray=cat(3,shape_struct.maskArray,lastMask);
+    shape_struct.cumulativeMask=lastMask;
 else
     %%subtract
-    if(size(dskcfShapeStruct.maskArray,3)<(dskcfShapeStruct.slidingWindowSize))
-        dskcfShapeStruct.maskArray=cat(3,dskcfShapeStruct.maskArray,lastMask);
-        dskcfShapeStruct.cumulativeMask=dskcfShapeStruct.cumulativeMask | lastMask;
+    if(size(shape_struct.maskArray,3)<(shape_struct.slidingWindowSize))
+        shape_struct.maskArray=cat(3,shape_struct.maskArray,lastMask);
+        shape_struct.cumulativeMask=shape_struct.cumulativeMask | lastMask;
     else
-        dskcfShapeStruct.maskArray=cat(3,dskcfShapeStruct.maskArray(:,:,2:dskcfShapeStruct.slidingWindowSize),lastMask);
-        dskcfShapeStruct.cumulativeMask=dskcfShapeStruct.maskArray(:,:,1);
-        for i=2:size(dskcfShapeStruct.maskArray,3)
-            dskcfShapeStruct.cumulativeMask=dskcfShapeStruct.cumulativeMask | dskcfShapeStruct.maskArray(:,:,i);
+        shape_struct.maskArray=cat(3,shape_struct.maskArray(:,:,2:shape_struct.slidingWindowSize),lastMask);
+        shape_struct.cumulativeMask=shape_struct.maskArray(:,:,1);
+        for i=2:size(shape_struct.maskArray,3)
+            shape_struct.cumulativeMask=shape_struct.cumulativeMask | shape_struct.maskArray(:,:,i);
         end
     end
-    tmpProp=regionprops(dskcfShapeStruct.cumulativeMask,'BoundingBox','area');
+    tmpProp=regionprops(shape_struct.cumulativeMask,'BoundingBox','area');
     areaList= cat(1, tmpProp.Area);
     [maxV,maxI]=max(areaList);
     if(isempty(areaList))
-        tmpBB=dskcfShapeStruct.cumulativeBB;
+        tmpBB=shape_struct.cumulativeBB;
     else
         tmpBB=tmpProp(maxI).BoundingBox;
         tmpBB=ceil([tmpBB(1),tmpBB(2),tmpBB(1)+tmpBB(3),tmpBB(2)+tmpBB(4)]);
@@ -71,7 +71,7 @@ else
         tmpBB(4)=min(imSize(1),tmpBB(4)+trackOffset(2));
 
     end
-    dskcfShapeStruct.cumulativeBB=tmpBB;
+    shape_struct.cumulativeBB=tmpBB;
 
 end
 

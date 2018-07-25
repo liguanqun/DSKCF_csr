@@ -1,4 +1,4 @@
-function trackerDSKCF_struct=initDSKCFtracker()
+function tracker_struct=initDSKCFtracker()
 % INITDSKCFTRACKER.m initializes the data structure for DS-KCF tracker [1]
 % 
 %   INITDSKCFTRACKER function initializes the data structure of the
@@ -10,23 +10,23 @@ function trackerDSKCF_struct=initDSKCFtracker()
 %   -trackerDSKCF_struct data structure that contains DS-KCF tracker data
 %  structure
 %   
-%   + currentTarget.posX column in the image plane
-%   + currentTarget.posY row in the image plane
-%   + currentTarget.h height of the target
-%   + currentTarget.w width of the target
-%   + currentTarget.bb bounding box of the target in the format 
+%   + cT.posX column in the image plane
+%   + cT.posY row in the image plane
+%   + cT.h height of the target
+%   + cT.w width of the target
+%   + cT.bb bounding box of the target in the format 
 %                     [topLeftX, topLeftY, bottomRightX, bottomRightY]
-%   + currentTarget.meanDepthObj mean depth of the tracker object
-%   + currentTarget.stdDepthObj depth's standard deviation of the tracker object
-%   + currentTarget.LabelRegions cluster labels of the segmented target region
-%   + currentTarget.regionIndex= label of the object cluster
-%   + currentTarget.Centers depth centers of the clusters
-%   + currentTarget.LUT=[] LUT
-%   + currentTarget.occBB=[0 0 0 0]; occluding bounding box in the format
+%   + cT.meanDepthObj mean depth of the tracker object
+%   + cT.stdDepthObj depth's standard deviation of the tracker object
+%   + cT.LabelRegions cluster labels of the segmented target region
+%   + cT.regionIndex= label of the object cluster
+%   + cT.Centers depth centers of the clusters
+%   + cT.LUT=[] LUT
+%   + cT.occBB=[0 0 0 0]; occluding bounding box in the format
 %   [topLeftX, topLeftY, bottomRightX, bottomRightY]
-%   + currentTarget.totalOcc=0;  total occlusion flag
-%   + currentTarget.underOcclusion=0;  under occlusion flag
-%   +currentTarget.conf maximum response of the DSKCF for the current frame
+%   + cT.totalOcc=0;  total occlusion flag
+%   + cT.underOcclusion=0;  under occlusion flag
+%   +cT.conf maximum response of the DSKCF for the current frame
 %
 %   models in the frequency domain for the KCFbased tracking by using color
 %   and depth features (see [1] for mor details)
@@ -35,7 +35,7 @@ function trackerDSKCF_struct=initDSKCFtracker()
 %   +model_xf = [];
 %   +model_xDf = [];
 %
-%   +previousTarget contains same information of currentTarget, but they
+%   +previousTarget contains same information of cT, but they
 %   it is relative to the target tracked in the previous frame.
 %
 %  See also WRAPPERDSKCF, INITDSKCFTRACKER_occluder
@@ -51,35 +51,35 @@ function trackerDSKCF_struct=initDSKCFtracker()
 %  massimo.camplani@bristol.ac.uk 
 %  hannuna@compsci.bristol.ac.uk
 
-trackerDSKCF_struct=[];
+tracker_struct=[];
 
 % current target position and bounding box
-trackerDSKCF_struct.currentTarget.posX=0;%column in the image plane
-trackerDSKCF_struct.currentTarget.posY=0;%row in the image plane
-trackerDSKCF_struct.currentTarget.h=0;%height of the target
-trackerDSKCF_struct.currentTarget.w=0;%width in the image planeof the target
-trackerDSKCF_struct.currentTarget.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
-trackerDSKCF_struct.currentTarget.conf=0;
+tracker_struct.cT.posX=0;%column in the image plane
+tracker_struct.cT.posY=0;%row in the image plane
+tracker_struct.cT.h=0;%height of the target
+tracker_struct.cT.w=0;%width in the image planeof the target
+tracker_struct.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
+tracker_struct.cT.conf=0;
 %current target depth distribution info
-trackerDSKCF_struct.currentTarget.meanDepthObj=0;% mean depth of the tracker object
-trackerDSKCF_struct.currentTarget.stdDepthObj=0;% depth's standard deviation of the tracker object
-trackerDSKCF_struct.currentTarget.LabelRegions=[];%cluster labels of the segmented target region
-trackerDSKCF_struct.currentTarget.regionIndex=0;%label of the object cluster
-trackerDSKCF_struct.currentTarget.Centers=[];%depth centers of the clusters
-trackerDSKCF_struct.currentTarget.LUT=[];%LUT
-trackerDSKCF_struct.currentTarget.segmentedBB=[];%bounding box of the corresponding sgmented region
+tracker_struct.cT.meanDepthObj=0;% mean depth of the tracker object
+tracker_struct.cT.stdDepthObj=0;% depth's standard deviation of the tracker object
+tracker_struct.cT.LabelRegions=[];%cluster labels of the segmented target region
+tracker_struct.cT.regionIndex=0;%label of the object cluster
+tracker_struct.cT.Centers=[];%depth centers of the clusters
+tracker_struct.cT.LUT=[];%LUT
+tracker_struct.cT.segmentedBB=[];%bounding box of the corresponding sgmented region
 %current target depth occluding info
-trackerDSKCF_struct.currentTarget.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
-trackerDSKCF_struct.currentTarget.totalOcc=0; % total occlusion flag
-trackerDSKCF_struct.currentTarget.underOcclusion=0; % under occlusion flag
+tracker_struct.cT.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
+tracker_struct.cT.totalOcc=0; % total occlusion flag
+tracker_struct.cT.underOcclusion=0; % under occlusion flag
 %target model alpha and X, see [1] for more details
-trackerDSKCF_struct.model_alphaf = []; 
-trackerDSKCF_struct.model_alphaDf = [];
-trackerDSKCF_struct.model_xf = [];
-trackerDSKCF_struct.model_xDf = [];
+tracker_struct.model_alphaf = []; 
+tracker_struct.model_alphaDf = [];
+tracker_struct.model_xf = [];
+tracker_struct.model_xDf = [];
 
 
 %previous target entries
-trackerDSKCF_struct.previousTarget=trackerDSKCF_struct.currentTarget;
+tracker_struct.pT=tracker_struct.cT;
 
 

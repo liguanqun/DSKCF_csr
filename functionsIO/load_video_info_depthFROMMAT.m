@@ -1,4 +1,4 @@
-function [img_files, depth_files, pos, target_sz, ground_truth, video_path, depth_path] = load_video_info_depthFROMMAT(base_path, video,newOrder)
+function [img_files, depth_files, pos, target_sz, ground_truth, video_path, depth_path] = load_video_info_depthFROMMAT(base_path, video)
 % LOAD_VIDEO_INFO_DEPTHFROMMAT.m is a automatically generates the relevant information for the video in the given path
 %
 %   LOAD_VIDEO_INFO_DEPTHFROMMAT loads all the relevant information for the
@@ -80,12 +80,8 @@ else
     ground_truth = ground_truth(:,[2,1]) + ground_truth(:,[4,3]) / 2;
 end
 % 读 frames.mat  or frames.json
-if(newOrder==false)
-    load([video_path 'frames'])
-else
-    load([video_path 'framesNEW'])
-    frames=framesNEW;
-end
+ load([video_path 'frames'])
+
 numOfFrames = frames.length;
 
 %from now on, work in the subfolder where all the images are

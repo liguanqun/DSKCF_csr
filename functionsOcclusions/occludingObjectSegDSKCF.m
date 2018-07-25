@@ -1,4 +1,4 @@
-function [occBB] = occludingObjectSegDSKCF(depthIm,trackerDSKCF_struct)
+function [occBB] = occludingObjectSegDSKCF(depthIm,tracker)
 %OCCLUDINGOBJECTSEGDSKCF function for segmenting the occluding object
 %
 %OCCLUDINGOBJECTSEGDSKCF.m is the function that segments the occluding
@@ -35,15 +35,15 @@ function [occBB] = occludingObjectSegDSKCF(depthIm,trackerDSKCF_struct)
 %  massimo.camplani@bristol.ac.uk
 %  hannuna@compsci.bristol.ac.uk
 
-bb=enlargeBB(trackerDSKCF_struct.currentTarget.bb ,0.05,size(depthIm));
+bb=enlargeBB(tracker.cT.bb ,0.05,size(depthIm));
 %bb=enlargeBB(bb ,0.05,size(depthMapCurr));
-selectedPix=trackerDSKCF_struct.currentTarget.LabelRegions==trackerDSKCF_struct.currentTarget.regionIndex;
+selectedPix=tracker.cT.LabelRegions==tracker.cT.regionIndex;
 front_depth=roiFromBB(depthIm,bb);
-tmpMean=trackerDSKCF_struct.currentTarget.Centers(trackerDSKCF_struct.currentTarget.regionIndex);%mean(depthIm(selectedPix));
+tmpMean=tracker.cT.Centers(tracker.cT.regionIndex);%mean(depthIm(selectedPix));
 depthVector=double(front_depth(selectedPix));
 tmpStd=std(depthVector);
 if(tmpStd<5)
-    tmpStd=trackerDSKCF_struct.currentTarget.stdDepthObj;
+    tmpStd=tracker.cT.stdDepthObj;
 end
 
 occmask=abs(double(depthIm)-tmpMean)<tmpStd;
@@ -67,7 +67,7 @@ else if(length(tarBBProp)==1)
         areas= cat(1, tarBBProp.Area);
         bbVector=cat(1, tarBBProp.BoundingBox)';
         %clean small areas....
-        minArea=trackerDSKCF_struct.currentTarget.w*trackerDSKCF_struct.currentTarget.h*0.05;
+        minArea=tracker.cT.w*tracker.cT.h*0.05;
         areaSmallIndex=areas<minArea;
         %exclude the small area index!!!!!!!!
         bbVector(:,areaSmallIndex) = [];

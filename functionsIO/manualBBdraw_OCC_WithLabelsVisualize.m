@@ -1,4 +1,4 @@
-function modifiedImage=manualBBdraw_OCC_WithLabelsVisualize(img,bb,bbOCC,myColor,myColorOCC,lWidth,myText1,myText2,myFigNumber)
+function modifiedImage=manualBBdraw_OCC_WithLabelsVisualize(img,bb,bbOCC,myColor,myColorOCC,lWidth,myText1,myText2,myFigNumber,frame)
 
 % MANUALBBDRAW_OCC_WITHLABELSVISUALIZE.m produces graphical output for DSKCF tracker
 %
@@ -39,12 +39,14 @@ figure(myFigNumber)
 hold on;
 imshow(img);
 if(isempty(myText1)==false)
-    text(25,25,myText1,'color',myColor,'fontsize',20,'fontweight','bold');
+    text(25,15,myText1,'color',myColor,'fontsize',10,'fontweight','bold');
 end
 if(isempty(myText2)==false)
-    text(25,60,myText2,'color',myColorOCC,'fontsize',20,'fontweight','bold');
+    text(25,30,myText2,'color',myColorOCC,'fontsize',10,'fontweight','bold');
 end
-
+if(isempty(frame)==false)
+    text(600,15,num2str(frame),'color','b','fontsize',10,'fontweight','bold');
+end
 
 if(isempty(bb)==false & isnan(bb)==false)
     if(bb(1)>imageSize(1) | bb(2)>imageSize(2))
@@ -82,8 +84,8 @@ if(isempty(bbOCC)==false & isnan(bbOCC)==false)
     end
 end
 
-F = im2frame(zbuffer_cdata(gcf));
-modifiedImage=imresize(F.cdata,[size(img,1),size(img,2)]);
+%F = im2frame(zbuffer_cdata(gcf));
+%modifiedImage=imresize(F.cdata,[size(img,1),size(img,2)]);
 
 %close (myFig)
 %pause()

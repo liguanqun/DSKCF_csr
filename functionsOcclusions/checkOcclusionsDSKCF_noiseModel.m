@@ -1,7 +1,5 @@
-function [p, depthCurr,stdNew,depthEstimated,stEstimated,...
-    minIndexReduced,LabelReg,Centers,regionIndex,LUTCC,regionIndexOBJ] ...
-    = checkOcclusionsDSKCF_noiseModel(depthMapCurr,noDataCurrent,...
-    trackerDSKCF_struct, bb)
+function [p, depthCurr,stdNew,depthEstimated,stEstimated,minIndexReduced,LabelReg,Centers,regionIndex,LUTCC,regionIndexOBJ] ...
+    = checkOcclusionsDSKCF_noiseModel(depthMapCurr,noDataCurrent, tracker, bb)
 
 %CHECKOCCLUSIONSDSKCF_NOISEMODEL function for detecting occlusions
 %
@@ -58,14 +56,14 @@ function [p, depthCurr,stdNew,depthEstimated,stEstimated,...
 %  massimo.camplani@bristol.ac.uk
 %  hannuna@compsci.bristol.ac.uk
 
-bbPrev = trackerDSKCF_struct.previousTarget.bb;
-depthPrev = trackerDSKCF_struct.previousTarget.meanDepthObj;
+bbPrev = tracker.pT.bb;
+depthPrev = tracker.pT.meanDepthObj;
 
 p=999;
 depthCurr=depthPrev;
 
 
-stdOLD=trackerDSKCF_struct.previousTarget.stdDepthObj;
+stdOLD=tracker.pT.stdDepthObj;
 regionIndexOBJ=0;
 if isempty(bb),
     stdNew=stdOLD;
@@ -84,7 +82,7 @@ bbIn=bb;
 bb=enlargeBB(bb ,0.05,size(depthMapCurr));
 
 %caluclate area of the current bounding box
-bbFinalArea=(trackerDSKCF_struct.currentTarget.w)*(trackerDSKCF_struct.currentTarget.h);
+bbFinalArea=(tracker.cT.w)*(tracker.cT.h);
 
 
 %extract the target roi, from the depth and the nodata mask
@@ -94,7 +92,7 @@ depthNoData=roiFromBB(noDataCurrent,bb);
 %hard coded quadratic noise model of the Kinect according to
 %M. Camplani, T. Mantecon, and L. Salgado. Depth-color fusion strategy for
 %3-D scene modeling with Kinect. Cybernetics, IEEE Transactions on,
-%43(6):1560–1571, 2013
+%43(6):1560ï¿½1571, 2013
 noiseModelVector=[2.3,0.00055,0.00000235];
 
 [LabelReg,Centers,LUT,H,I,LUTCC]=fastDepthSegmentationDSKCF_noiseModel...

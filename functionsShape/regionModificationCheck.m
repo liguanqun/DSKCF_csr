@@ -1,7 +1,7 @@
-function [estimatedShapeBB,shapeDSKCF_struct,changeOfShapeFlag,newOutput]=...
+function [estimatedShapeBB,shape_struct,changeOfShapeFlag,newOutput]=...
     regionModificationCheck(sizeOfSegmenter,sizeOfTarget,accumulatedSEGBool...
-    ,noDataPercent,minSizeOK,estimatedShapeBB,shapeDSKCF_struct,imageSize...
-    ,trackerDSKCF_struct)
+    ,noDataPercent,minSizeOK,estimatedShapeBB,shape_struct,imageSize...
+    ,tracker)
 % REGIONMODIFICATIONCHECK.m function to identify change of shape as
 % presented in [1]
 %
@@ -54,16 +54,16 @@ function [estimatedShapeBB,shapeDSKCF_struct,changeOfShapeFlag,newOutput]=...
 newOutput=false;
 changeOfShapeFlag=false;
 if(accumulatedSEGBool && noDataPercent)
-    if(shapeDSKCF_struct.growingStatus==false)
+    if(shape_struct.growingStatus==false)
         
         if(sizeOfSegmenter<sizeOfTarget*0.9  && minSizeOK )
             estimatedShapeBB=enlargeBB(estimatedShapeBB ,-0.05,imageSize);
-            shapeDSKCF_struct.growingStatus=false;
+            shape_struct.growingStatus=false;
             newOutput=true;
         end
         
         if(sizeOfSegmenter>sizeOfTarget*1.09 )
-            %trackerDSKCF_struct.currentTarget.segmentedBB=tmpBBforSegCumulative(:)';
+            %trackerDSKCF_struct.cT.segmentedBB=tmpBBforSegCumulative(:)';
             changeOfShapeFlag=true;
             newOutput=true;
         end
@@ -72,8 +72,8 @@ if(accumulatedSEGBool && noDataPercent)
         [centerX,centerY,width,height]=fromBBtoCentralPoint(estimatedShapeBB);
         estimatedShapeSize=[height,width];
         
-        currentSizeSegmenter=[shapeDSKCF_struct.segmentH,shapeDSKCF_struct.segmentW];
-        currentSizeMASK=[size(shapeDSKCF_struct.maskArray(:,:,1),1),size(shapeDSKCF_struct.maskArray(:,:,1),2)];
+        currentSizeSegmenter=[shape_struct.segmentH,shape_struct.segmentW];
+        currentSizeMASK=[size(shape_struct.maskArray(:,:,1),1),size(shape_struct.maskArray(:,:,1),2)];
         
         diffSize=estimatedShapeSize-currentSizeSegmenter;
         
@@ -87,27 +87,27 @@ if(accumulatedSEGBool && noDataPercent)
             newOutput=true;
             if(diffSize(1)>0.07*currentSizeSegmenter(1))
                 segmentHIncrement=round(0.05*currentSizeMASK(1));
-                shapeDSKCF_struct.growingStatus=true;
+                shape_struct.growingStatus=true;
                 %newOutput=true;
             end
             
             if(diffSize(2)>0.05*currentSizeSegmenter(2))
                 segmentWIncrement=round(0.05*currentSizeMASK(2));
-                shapeDSKCF_struct.growingStatus=true;
+                shape_struct.growingStatus=true;
                 %newOutput=true;
             end
             
-            shapeDSKCF_struct.growingStatus=true;
+            shape_struct.growingStatus=true;
             if(segmentHIncrement>0 || segmentWIncrement>0)
-                shapeDSKCF_struct.cumulativeMask=padarray(shapeDSKCF_struct.cumulativeMask,[segmentHIncrement segmentWIncrement]);
-                for i=1:size(shapeDSKCF_struct.maskArray,3)
+                shape_struct.cumulativeMask=padarray(shape_struct.cumulativeMask,[segmentHIncrement segmentWIncrement]);
+                for i=1:size(shape_struct.maskArray,3)
                     tmpMaskArray(:,:,i)=...
-                        padarray(shapeDSKCF_struct.maskArray(:,:,i),[segmentHIncrement segmentWIncrement]);
+                        padarray(shape_struct.maskArray(:,:,i),[segmentHIncrement segmentWIncrement]);
                 end
-                shapeDSKCF_struct.maskArray=tmpMaskArray;
+                shape_struct.maskArray=tmpMaskArray;
                 
-                shapeDSKCF_struct.segmentW=max([estimatedShapeSize(2),trackerDSKCF_struct.currentTarget.w]);
-                shapeDSKCF_struct.segmentH=max([estimatedShapeSize(1),trackerDSKCF_struct.currentTarget.h]);
+                shape_struct.segmentW=max([estimatedShapeSize(2),tracker.cT.w]);
+                shape_struct.segmentH=max([estimatedShapeSize(1),tracker.cT.h]);
             end
             
         end
@@ -116,8 +116,8 @@ if(accumulatedSEGBool && noDataPercent)
             
             %find the cropping area...
             %is inside the target BB?
-            if(estimatedShapeSize(1)<trackerDSKCF_struct.currentTarget.h ...
-                    && estimatedShapeSize(2)<trackerDSKCF_struct.currentTarget.w)
+            if(estimatedShapeSize(1)<tracker.cT.h ...
+                    && estimatedShapeSize(2)<tracker.cT.w)
                 
                 bbIn=fromCentralPointToBB(round(currentSizeMASK(2)/2),round(currentSizeMASK(1)/2),...
                     estimatedShapeSize(2),estimatedShapeSize(1),...
@@ -125,29 +125,29 @@ if(accumulatedSEGBool && noDataPercent)
                 
                 
                 newOutput=false;%decide later what you want to show
-                shapeDSKCF_struct.growingStatus=false;
+                shape_struct.growingStatus=false;
                 
-                shapeDSKCF_struct.segmentW=trackerDSKCF_struct.currentTarget.w;
-                shapeDSKCF_struct.segmentH=trackerDSKCF_struct.currentTarget.h;
+                shape_struct.segmentW=tracker.cT.w;
+                shape_struct.segmentH=tracker.cT.h;
                 
                 
                 %reduce the search region
                 %grow the mask properly...
                 
-                tmpCumulativeMask=roiFromBB(shapeDSKCF_struct.cumulativeMask,bbIn);
-                segmentHIncrement=round(((1.1*trackerDSKCF_struct.currentTarget.h)-size(tmpCumulativeMask,1))/2);
+                tmpCumulativeMask=roiFromBB(shape_struct.cumulativeMask,bbIn);
+                segmentHIncrement=round(((1.1*tracker.cT.h)-size(tmpCumulativeMask,1))/2);
                 
-                segmentWIncrement=round(((1.1*trackerDSKCF_struct.currentTarget.w)-size(tmpCumulativeMask,2))/2);
+                segmentWIncrement=round(((1.1*tracker.cT.w)-size(tmpCumulativeMask,2))/2);
                 %be sure >0
                 segmentHIncrement=segmentHIncrement*(segmentHIncrement>0);
                 segmentWIncrement=segmentWIncrement*(segmentWIncrement>0);
                 
-                shapeDSKCF_struct.cumulativeMask=padarray(tmpCumulativeMask,[segmentHIncrement segmentWIncrement]);
-                for i=1:size(shapeDSKCF_struct.maskArray,3)
+                shape_struct.cumulativeMask=padarray(tmpCumulativeMask,[segmentHIncrement segmentWIncrement]);
+                for i=1:size(shape_struct.maskArray,3)
                     tmpMaskArray(:,:,i)=...
-                        roiFromBB(shapeDSKCF_struct.maskArray(:,:,i),bbIn);
+                        roiFromBB(shape_struct.maskArray(:,:,i),bbIn);
                 end
-                shapeDSKCF_struct.maskArray=padarray(tmpMaskArray,[segmentHIncrement segmentWIncrement]);
+                shape_struct.maskArray=padarray(tmpMaskArray,[segmentHIncrement segmentWIncrement]);
                 
                 
                 
@@ -158,37 +158,37 @@ if(accumulatedSEGBool && noDataPercent)
                     currentSizeMASK(2),currentSizeMASK(1));
                 
                 newOutput=true;%show this one!!!!!
-                shapeDSKCF_struct.growingStatus=true;
+                shape_struct.growingStatus=true;
                 
-                shapeDSKCF_struct.segmentW=max([estimatedShapeSize(2),trackerDSKCF_struct.currentTarget.w]);
-                shapeDSKCF_struct.segmentH=max([estimatedShapeSize(1),trackerDSKCF_struct.currentTarget.h]);
+                shape_struct.segmentW=max([estimatedShapeSize(2),tracker.cT.w]);
+                shape_struct.segmentH=max([estimatedShapeSize(1),tracker.cT.h]);
                 
                 
                 %reduce the search region
                 %shrink the masks, but eventually you need to repad the
                 %area as the minimun target area
-                tmpCumulativeMask=roiFromBB(shapeDSKCF_struct.cumulativeMask,bbIn);
-                segmentHIncrement=round(((trackerDSKCF_struct.currentTarget.h)-estimatedShapeSize(1))/2);
-                %segmentWIncrement=round(0.05*trackerDSKCF_struct.currentTarget.w);
-                segmentWIncrement=round(((trackerDSKCF_struct.currentTarget.w)-estimatedShapeSize(2))/2);
+                tmpCumulativeMask=roiFromBB(shape_struct.cumulativeMask,bbIn);
+                segmentHIncrement=round(((tracker.cT.h)-estimatedShapeSize(1))/2);
+                %segmentWIncrement=round(0.05*trackerDSKCF_struct.cT.w);
+                segmentWIncrement=round(((tracker.cT.w)-estimatedShapeSize(2))/2);
                 %be sure >0
                 segmentHIncrement=segmentHIncrement*(segmentHIncrement>0);
                 segmentWIncrement=segmentWIncrement*(segmentWIncrement>0);
                 
-                shapeDSKCF_struct.cumulativeMask=padarray(tmpCumulativeMask,[segmentHIncrement segmentWIncrement]);
-                for i=1:size(shapeDSKCF_struct.maskArray,3)
+                shape_struct.cumulativeMask=padarray(tmpCumulativeMask,[segmentHIncrement segmentWIncrement]);
+                for i=1:size(shape_struct.maskArray,3)
                     
                     tmpMaskArray(:,:,i)=...
-                        roiFromBB(shapeDSKCF_struct.maskArray(:,:,i),bbIn);
+                        roiFromBB(shape_struct.maskArray(:,:,i),bbIn);
                 end
-                shapeDSKCF_struct.maskArray=padarray(tmpMaskArray,[segmentHIncrement segmentWIncrement]);
+                shape_struct.maskArray=padarray(tmpMaskArray,[segmentHIncrement segmentWIncrement]);
                 
                 
             end
             
             if(sizeOfSegmenter<sizeOfTarget*0.9  && minSizeOK )
                 estimatedShapeBB=enlargeBB(estimatedShapeBB ,-0.05,imageSize);
-                shapeDSKCF_struct.growingStatus=false;
+                shape_struct.growingStatus=false;
                 newOutput=true;
             end
             

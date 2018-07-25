@@ -1,4 +1,4 @@
-function scaleDSKCF_struct=initDSKCFparam(DSKCFparameters,target_sz,pos)
+function scale_struct=initDSKCFparam(DSpara,target_sz,pos)
 % INITDSKCFPARAM.m initializes the scale data structure for DS-KCF tracker [1]
 % 
 %   INITDSKCFPARAM function initializes the scale data structure of the
@@ -34,45 +34,37 @@ function scaleDSKCF_struct=initDSKCFparam(DSKCFparameters,target_sz,pos)
 %  + cos_windows precomputed cosine windows for each scale
 %  + len contains the area of the target at each scale
 %  + ind 
-%
-%  [1] S. Hannuna, M. Camplani, J. Hall, M. Mirmehdi, D. Damen, T.
-%  Burghardt, A.Paiement, L. Tao, DS-KCF: A real-time tracker for RGB-D
-%  data, Journal of Real-Time Image Processing
-%
-%
-%  University of Bristol 
-%  Massimo Camplani and Sion Hannuna
-%  
-%  massimo.camplani@bristol.ac.uk 
-%  hannuna@compsci.bristol.ac.uk
 
-scaleDSKCF_struct=[];
+scale_struct=[];
 
 % Find initial scale
-scaleDSKCF_struct.i = find(DSKCFparameters.scales == 1);
-scaleDSKCF_struct.iPrev = scaleDSKCF_struct.i; % for inerpolating model
-scaleDSKCF_struct.minStep = min(abs(diff(DSKCFparameters.scales)));
-scaleDSKCF_struct.scales = DSKCFparameters.scales;
-scaleDSKCF_struct.step = min(diff(DSKCFparameters.scales)); % use smallest step to decide whether to look at other scales
-scaleDSKCF_struct.updated = 0;
-scaleDSKCF_struct.currDepth = 1;
-scaleDSKCF_struct.InitialDepth = 1;
-scaleDSKCF_struct.InitialTargetSize = target_sz;
+scale_struct.i = find(DSpara.scales == 1);
+scale_struct.iPrev = scale_struct.i; % for inerpolating model
+scale_struct.minStep = min(abs(diff(DSpara.scales)));
+scale_struct.scales = DSpara.scales;
+scale_struct.step = min(diff(DSpara.scales)); % use smallest step to decide whether to look at other scales
+scale_struct.updated = 0;
+scale_struct.currDepth = 1;
+scale_struct.InitialDepth = 1;
+scale_struct.InitialTargetSize = target_sz;
 
-for i=1:length(DSKCFparameters.scales)
-    scaleDSKCF_struct.windows_sizes(i).window_sz = round(DSKCFparameters.window_sz * DSKCFparameters.scales(i));
-    scaleDSKCF_struct.target_sz(i).target_sz = round(target_sz * DSKCFparameters.scales(i));
-    scaleDSKCF_struct.pos(i).pos = pos;
+for i=1:length(DSpara.scales)
+    scale_struct.windows_sizes(i).window_sz = round(DSpara.window_sz * DSpara.scales(i));
+    scale_struct.target_sz(i).target_sz = round(target_sz * DSpara.scales(i));
+    scale_struct.pos(i).pos = pos;
     
     %create regression labels, gaussian shaped, with a bandwidth
     %proportional to target size  构造回归函数的 目标函数
-    scaleDSKCF_struct.output_sigmas(i).output_sigma = sqrt(prod(scaleDSKCF_struct.target_sz(i).target_sz)) * DSKCFparameters.output_sigma_factor / DSKCFparameters.cell_size;
-    scaleDSKCF_struct.yfs(i).yf = fft2(gaussian_shaped_labels( scaleDSKCF_struct.output_sigmas(i).output_sigma, floor( scaleDSKCF_struct.windows_sizes(i).window_sz / DSKCFparameters.cell_size)));
+    scale_struct.output_sigmas(i).output_sigma = sqrt(prod(scale_struct.target_sz(i).target_sz)) * DSpara.output_sigma_factor / DSpara.cell_size;
+    scale_struct.yfs(i).yf = fft2(gaussian_shaped_labels( scale_struct.output_sigmas(i).output_sigma, floor( scale_struct.windows_sizes(i).window_sz / DSpara.cell_size)));
     
     %store pre-computed cosine window存储 预计算的cos 窗函数
-    scaleDSKCF_struct.cos_windows(i).cos_window = hann(size(scaleDSKCF_struct.yfs(i).yf,1)) * hann(size(scaleDSKCF_struct.yfs(i).yf,2))';
-    scaleDSKCF_struct.lens(i).len = scaleDSKCF_struct.target_sz(i).target_sz(1) * scaleDSKCF_struct.target_sz(i).target_sz(2);
-    scaleDSKCF_struct.inds(i).ind = floor(linspace(1,scaleDSKCF_struct.lens(i).len, round(0.25 * scaleDSKCF_struct.lens(i).len)));
+    scale_struct.cos_windows(i).cos_window = hann(size(scale_struct.yfs(i).yf,1)) * hann(size(scale_struct.yfs(i).yf,2))';
+    scale_struct.lens(i).len = scale_struct.target_sz(i).target_sz(1) * scale_struct.target_sz(i).target_sz(2);
+    scale_struct.inds(i).ind = floor(linspace(1,scale_struct.lens(i).len, round(0.25 * scale_struct.lens(i).len)));
 end
 
-scaleDSKCF_struct.prevpos=pos;
+scale_struct.prevpos=pos;
+
+
+

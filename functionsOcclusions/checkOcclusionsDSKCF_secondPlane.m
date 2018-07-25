@@ -1,6 +1,6 @@
 function [p, depthCurr,stdNew,LabelReg,Centers,regionIndex,LUTCC...
     secondPlaneDepth,secondPlaneDepthStd] = checkOcclusionsDSKCF_secondPlane...
-    (depthMapCurr,noDataCurrent,trackerDSKCF_struct, bb)
+    (depthMapCurr,noDataCurrent,tracker, bb)
 %CHECKOCCLUSIONSDSKCF_SECONDPLANE function to detect target candidate in
 %the occluded area
 %
@@ -60,8 +60,8 @@ function [p, depthCurr,stdNew,LabelReg,Centers,regionIndex,LUTCC...
 %
 
 
-bbPrev = trackerDSKCF_struct.previousTarget.bb;
-depthPrev = trackerDSKCF_struct.previousTarget.meanDepthObj;
+bbPrev = tracker.pT.bb;
+depthPrev = tracker.pT.meanDepthObj;
 
 p=999;
 depthCurr=depthPrev;
@@ -70,7 +70,7 @@ depthCurr=depthPrev;
 secondPlaneDepth=[];
 secondPlaneDepthStd=[];
 
-stdOLD=trackerDSKCF_struct.previousTarget.stdDepthObj;
+stdOLD=tracker.pT.stdDepthObj;
 if isempty(bb),
     stdNew=stdOLD;
     minIndexReduced=1;
@@ -91,7 +91,7 @@ depthNoData=roiFromBB(noDataCurrent,bb);
 %hard coded quadratic noise model of the Kinect according to
 %M. Camplani, T. Mantecon, and L. Salgado. Depth-color fusion strategy for
 %3-D scene modeling with Kinect. Cybernetics, IEEE Transactions on,
-%43(6):1560–1571, 2013
+%43(6):1560ï¿½1571, 2013
 noiseModelVector=[2.3,0.00055,0.00000235];
 
 [LabelReg,Centers,LUT,H,I,LUTCC]=fastDepthSegmentationDSKCF_noiseModel...

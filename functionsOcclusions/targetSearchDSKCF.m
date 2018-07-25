@@ -1,6 +1,5 @@
 function [tarBB, occBB, tarlist, id,occmask] = targetSearchDSKCF(bb,...
-    trackerDSKCF_struct, DSKCFparameters,im,depth,depth16Bit,...
-    scaleDSKCF_struct,confValue)
+    tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue)
 %TARGETSEARCHDSKCF function for segmenting the occluding object
 %
 %TARGETSEARCHDSKCF.m this function segments the occluding area and find
@@ -45,8 +44,8 @@ bbIn=bb;
 bb=enlargeBB(bb ,0.05,size(im));
 
 %%take Bounding box and mask from the previous segmentation!!!!!
-occmask=trackerDSKCF_struct.currentTarget.LabelRegions==trackerDSKCF_struct.currentTarget.regionIndex;
-centersEstimated=trackerDSKCF_struct.currentTarget.Centers;
+occmask=tracker.cT.LabelRegions==tracker.cT.regionIndex;
+centersEstimated=tracker.cT.Centers;
 tarBBProp=regionprops(occmask,'BoundingBox','Area');
 
 %one single big region....just take the bounding box
@@ -75,17 +74,17 @@ end
 occBB=occBB';
 
 %retrieve the list of possible candidates according to the segmentation
-[tarBBList, areaList] = regionSegmentsFast( trackerDSKCF_struct.currentTarget.LabelRegions,bb);
+[tarBBList, areaList] = regionSegmentsFast( tracker.cT.LabelRegions,bb);
 
 %exclude the occluding index!!!!!!!!
-if(trackerDSKCF_struct.currentTarget.regionIndex~=6666666)
-    tarBBList(:,trackerDSKCF_struct.currentTarget.regionIndex) = [];
-    areaList(trackerDSKCF_struct.currentTarget.regionIndex)= [];
-    centersEstimated(trackerDSKCF_struct.currentTarget.regionIndex) =[];
+if(tracker.cT.regionIndex~=6666666)
+    tarBBList(:,tracker.cT.regionIndex) = [];
+    areaList(tracker.cT.regionIndex)= [];
+    centersEstimated(tracker.cT.regionIndex) =[];
 end
 
-minArea=trackerDSKCF_struct.currentTarget.w*...
-    trackerDSKCF_struct.currentTarget.h*0.05;
+minArea=tracker.cT.w*...
+    tracker.cT.h*0.05;
 areaSmallIndex=areaList<minArea;
 %exclude the small area index!!!!!!!!
 tarBBList(:,areaSmallIndex) = [];
@@ -111,21 +110,21 @@ else
         tmpCenter=ceil([tmpBB(1)+tmpWidthTarget/2 tmpBB(2)+tmpHeightTarget/2]);
         
         %take image patch....
-        patch = get_subwindow(im, tmpCenter(2:-1:1), scaleDSKCF_struct.windows_sizes(scaleDSKCF_struct.i).window_sz);
-        patch_depth = get_subwindow(depth, tmpCenter(2:-1:1), scaleDSKCF_struct.windows_sizes(scaleDSKCF_struct.i).window_sz);
+        patch = get_subwindow(im, tmpCenter(2:-1:1), scale_struct.windows_sizes(scale_struct.i).window_sz);
+        patch_depth = get_subwindow(depth, tmpCenter(2:-1:1), scale_struct.windows_sizes(scale_struct.i).window_sz);
         
         [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF...
-            ( patch,patch_depth, DSKCFparameters.features,DSKCFparameters.kernel,...
-            tmpCenter(2:-1:1),DSKCFparameters.cell_size, ...
-            scaleDSKCF_struct.cos_windows(scaleDSKCF_struct.i).cos_window,...
-            trackerDSKCF_struct.model_xf,trackerDSKCF_struct.model_alphaf,...
-            trackerDSKCF_struct.model_xDf,trackerDSKCF_struct.model_alphaDf,...
+            ( patch,patch_depth, DSpara.features,DSpara.kernel,...
+            tmpCenter(2:-1:1),DSpara.cell_size, ...
+            scale_struct.cos_windows(scale_struct.i).cos_window,...
+            tracker.model_xf,tracker.model_alphaf,...
+            tracker.model_xDf,tracker.model_alphaDf,...
             size(im,1),size(im,2));
         
         %now maxPositionImagePlane has row index and column index so.....
-        smoothFactorD=weightDistanceLogisticOnDepth(trackerDSKCF_struct.currentTarget.meanDepthObj,...
+        smoothFactorD=weightDistanceLogisticOnDepth(tracker.cT.meanDepthObj,...
             double(depth16Bit(maxPositionImagePlane(1),maxPositionImagePlane(2))),...
-            trackerDSKCF_struct.currentTarget.stdDepthObj);
+            tracker.cT.stdDepthObj);
         smoothFactorD_vector=[smoothFactorD_vector,smoothFactorD];
         
         conf=maxResponse*smoothFactorD;

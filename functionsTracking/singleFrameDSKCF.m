@@ -1,35 +1,5 @@
-function [pos,trackerDSKCF_struct,trackerDSKCF_structOccluder,scaleDSKCF_struct,...
-    DSKCFparameters_Occluder,segmentedMASK,shapeDSKCF_struct]=...
-    singleFrameDSKCF(firstFrame,pos,frameCurr,trackerDSKCF_struct,DSKCFparameters,...
-    scaleDSKCF_struct,trackerDSKCF_structOccluder,DSKCFparameters_Occluder,shapeDSKCF_struct)
-% SINGLEFRAMEDSKCF.m is the core function of DS-KCF tracker
-%   INPUT:
-%   - firstFrame   boolean flag that marks the first frame of the
-%   sequence
-%   - frameCurr    first frame data structure (see WRAPPERDSKCF)
-%   - trackerDSKCF_struct  DS-KCF tracker data structure (see WRAPPERDSKCF,
-%   INITDSKCFTRACKER)
-%   - DSKCFparameters, DSKCFparameters_Occluder    parameters structures
-%   (see WRAPPERDSKCF)
-%   - scaleDSKCF_struct    scale data structure (see
-%   wrapperDSKCF,INITDSKCFPARAM)
-%   -trackerDSKCF_structOccluder DS-KCF tracker data structure for the
-%   occluder
-%   -pos previous position of the DS-KCF tracker pos=[y x] where x is the
-%   column and y is the row index
-%   -shapeDSKCF_struct data structure containing shape information and
-%   segmentation masks
-%
-%   OUTPUT
-%   -pos updated position of the DS-KCF tracker pos=[y x] where x is the
-%   column and y is the row index
-%   -trackerDSKCF_struct,trackerDSKCF_structOccluder updated data
-%   structures for the trackers
-%   -scaleDSKCF_struct updated scale data structure
-%   -DSKCFparameters_Occluder updated parameter structure for the occluder
-%   -timeMatrixRow Vecotr containing the processing rate for all the main
-%   modules of the ds-kcf (see [1] for more details)
-
+function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,segmentedMASK,shape_struct]=...
+    singleFrameDSKCF(firstFrame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
 
 im=frameCurr.gray;
 imRGB=frameCurr.rgb;
@@ -42,10 +12,10 @@ confInterval1=0.4;
 confInterval2=0.15;
 confValue3=0.14;
 
-currentScale=scaleDSKCF_struct.i;
+cScale=scale_struct.i;
 
-%clean target struct.....
-trackerDSKCF_struct=resetDSKCFtrackerInfo(trackerDSKCF_struct);
+%把target结构中 关于当前目标的状态清空 在新的循环中重新赋值
+tracker=resetDSKCFtrackerInfo(tracker);
 changeOfShapeFlag=false;
 segmentedMASK=repmat(0,size(depth));
 
@@ -54,109 +24,89 @@ segmentedMASK=repmat(0,size(depth));
 if(firstFrame==false)
     
     %no occlusion case 非遮挡的情况
-    if ~trackerDSKCF_struct.previousTarget.underOcclusion,
-            %track the object and then check for occlusions
-        patch = get_subwindow(im, pos, scaleDSKCF_struct.windows_sizes(currentScale).window_sz);
-        patch_depth = get_subwindow(depth, pos, scaleDSKCF_struct.windows_sizes(currentScale).window_sz);
+    if ~tracker.pT.underOcclusion,
+            %track the object and then check for occlusions  跟踪目标并且检查是否遮挡
+        patch = get_subwindow(im, pos, scale_struct.windows_sizes(cScale).window_sz);
+        patch_depth = get_subwindow(depth, pos, scale_struct.windows_sizes(cScale).window_sz);
         
-        %calculate response of the DS-KCF tracker
-        %计算DSKCF的response
-        [response, maxResponse,pos]=maxResponseDepthWeightDSKCF(...
-            patch,patch_depth,depth16Bit, DSKCFparameters.features,DSKCFparameters.kernel,...
-            pos,DSKCFparameters.cell_size, scaleDSKCF_struct.cos_windows(currentScale).cos_window,...
-            trackerDSKCF_struct.model_xf,trackerDSKCF_struct.model_alphaf,...
-            trackerDSKCF_struct.model_xDf,trackerDSKCF_struct.model_alphaDf,...
-            trackerDSKCF_struct.previousTarget.meanDepthObj,...
-            trackerDSKCF_struct.previousTarget.stdDepthObj);
+        %calculate response of the DS-KCF tracker 计算DSKCF的response
+        [response, maxResponse,pos]=maxResponseDepthWeightDSKCF(patch,patch_depth,depth16Bit,...
+            DSpara.features,DSpara.kernel,pos,DSpara.cell_size, scale_struct.cos_windows(cScale).cos_window,...
+            tracker.model_xf,tracker.model_alphaf, tracker.model_xDf,tracker.model_alphaDf, tracker.pT.meanDepthObj,tracker.pT.stdDepthObj);
         
-        %update tracker struct, new position etc
-        trackerDSKCF_struct.currentTarget.posX=pos(2);
-        trackerDSKCF_struct.currentTarget.posY=pos(1);
+        %update tracker struct, new position etc 更新 tracker 结构
+        tracker.cT.posX=pos(2);
+        tracker.cT.posY=pos(1);
         
-        trackerDSKCF_struct.currentTarget.bb=fromCentralPointToBB...
-            (trackerDSKCF_struct.currentTarget.posX,trackerDSKCF_struct.currentTarget.posY,...
-            trackerDSKCF_struct.currentTarget.w,trackerDSKCF_struct.currentTarget.h,...
-            size(im,2),size(im,1));
+        tracker.cT.bb=fromCentralPointToBB (tracker.cT.posX,tracker.cT.posY, tracker.cT.w,tracker.cT.h, size(im,2),size(im,1));
         
-        trackerDSKCF_struct.currentTarget.conf=max(response(:));%use this one, discard the weight...
+        tracker.cT.conf=max(response(:));%use this one, discard the weight...
         
-        %segment the depth data inside the tracked region
-        %在跟踪区域分割深度图
-        [p, trackerDSKCF_struct.currentTarget.meanDepthObj,trackerDSKCF_struct.currentTarget.stdDepthObj,estimatedDepth,...
-            estimatedSTD,minIndexReduced,trackerDSKCF_struct.currentTarget.LabelRegions,...
-            trackerDSKCF_struct.currentTarget.Centers,trackerDSKCF_struct.currentTarget.regionIndex,...
-            trackerDSKCF_struct.currentTarget.LUT,regionIndexOBJ] =...
-            checkOcclusionsDSKCF_noiseModel(...
-            depth16Bit,noData,trackerDSKCF_struct, trackerDSKCF_struct.currentTarget.bb);
+        %segment the depth data inside the tracked region在跟踪区域分割深度图
+        [p, tracker.cT.meanDepthObj,tracker.cT.stdDepthObj,estimatedDepth,estimatedSTD,...
+            minIndexReduced,tracker.cT.LabelRegions,tracker.cT.Centers,tracker.cT.regionIndex,tracker.cT.LUT,regionIndexOBJ] =...
+            checkOcclusionsDSKCF_noiseModel(depth16Bit,noData,tracker, tracker.cT.bb);
         
-        %if the segmented target is in the front plane use current bounding
-        %box....or use the one provided by the depth based segmentation as
-        %in [1]
+
+        %  如果分割的目标在前景中，使用当前的bounding box 否则的话使用深度图目标分割提供的
         if(regionIndexOBJ==0 )
-            trackerDSKCF_struct.currentTarget.segmentedBB=trackerDSKCF_struct.currentTarget.bb';
+            tracker.cT.segmentedBB=tracker.cT.bb';
         else
-            tmpProp=regionprops(trackerDSKCF_struct.currentTarget.LabelRegions==regionIndexOBJ,'BoundingBox');
+            tmpProp=regionprops(tracker.cT.LabelRegions==regionIndexOBJ,'BoundingBox');
             tmpBB=tmpProp.BoundingBox;
             %tmpCentroid=tmpProp.Centroid;
-            trackerDSKCF_struct.currentTarget.segmentedBB=ceil([tmpBB(1), tmpBB(2),tmpBB(1)+tmpBB(3),tmpBB(2)+tmpBB(4)]);
+            tracker.cT.segmentedBB=ceil([tmpBB(1), tmpBB(2),tmpBB(1)+tmpBB(3),tmpBB(2)+tmpBB(4)]);
            
-            tmpOffset=enlargeBB(trackerDSKCF_struct.currentTarget.bb ,0.05,size(depth16Bit));
+            tmpOffset=enlargeBB(tracker.cT.bb ,0.05,size(depth16Bit));
            
-            trackerDSKCF_struct.currentTarget.segmentedBB([1,3])= +trackerDSKCF_struct.currentTarget.segmentedBB([1,3]) +tmpOffset(1);
+            tracker.cT.segmentedBB([1,3])= +tracker.cT.segmentedBB([1,3]) +tmpOffset(1);
            
-            trackerDSKCF_struct.currentTarget.segmentedBB([2,4])=+trackerDSKCF_struct.currentTarget.segmentedBB([2,4])+tmpOffset(2);
+            tracker.cT.segmentedBB([2,4])=+tracker.cT.segmentedBB([2,4])+tmpOffset(2);
             
-            tmpBBforSeg=enlargeBB(trackerDSKCF_struct.currentTarget.bb ,0.05,size(depth16Bit));
+            tmpBBforSeg=enlargeBB(tracker.cT.bb ,0.05,size(depth16Bit));
             
             %generate a out of bound rect is necessary
-            outOfBoundBB=enlargeBB(trackerDSKCF_struct.currentTarget.bb ,0.05,5*size(depth16Bit));
+            outOfBoundBB=enlargeBB(tracker.cT.bb ,0.05,5*size(depth16Bit));
             
             outOfBoundSize=[outOfBoundBB(4)-outOfBoundBB(2)+1,outOfBoundBB(3)-outOfBoundBB(1)+1];
             
-            [tmpMask,insidePatchIndexes,finalMask]=extractSegmentedPatchV3(trackerDSKCF_struct.currentTarget.LabelRegions==regionIndexOBJ,...
-                outOfBoundSize,[trackerDSKCF_struct.currentTarget.posX,trackerDSKCF_struct.currentTarget.posY],...
-                shapeDSKCF_struct,[size(depth16Bit,2),size(depth16Bit,1)]);
+            [tmpMask,insidePatchIndexes,finalMask]=extractSegmentedPatchV3(tracker.cT.LabelRegions==regionIndexOBJ,...
+                outOfBoundSize,[tracker.cT.posX,tracker.cT.posY],...
+                shape_struct,[size(depth16Bit,2),size(depth16Bit,1)]);
             
-            if(shapeDSKCF_struct.growingStatus==false)
-                shapeDSKCF_struct=addSegmentationResults(shapeDSKCF_struct,tmpMask,tmpBBforSeg,tmpOffset,size(depth16Bit));
+            if(shape_struct.growingStatus==false)
+                shape_struct=addSegmentationResults(shape_struct,tmpMask,tmpBBforSeg,tmpOffset,size(depth16Bit));
             else
                 %in case region is growing....then resegment....
                 %segment the depth data inside the tracked region
                 %take the new bb
-                newSegmentBB=fromCentralPointToBB(trackerDSKCF_struct.currentTarget.posX,...
-                    trackerDSKCF_struct.currentTarget.posY,shapeDSKCF_struct.segmentW,...
-                    shapeDSKCF_struct.segmentH,size(im,2),size(im,1));
+                newSegmentBB=fromCentralPointToBB(tracker.cT.posX, tracker.cT.posY,shape_struct.segmentW,...
+                    shape_struct.segmentH,size(im,2),size(im,1));
                 
                 [pNEW, newMean,newSTD,newEstimatedDepth,newEstimatedSTD,newMinIndexReduced,...
                     newLabelRegions,newCenters,newRegionIndex,newLUT,newRegionIndexOBJ] = ...
-                    checkOcclusionsDSKCF_noiseModel(...
-                    depth16Bit,noData,trackerDSKCF_struct, newSegmentBB);
+                    checkOcclusionsDSKCF_noiseModel(depth16Bit,noData,tracker, newSegmentBB);
                 
-                [depthDistance,depthIndex]=min(abs(newCenters-trackerDSKCF_struct.currentTarget.meanDepthObj));
+                [depthDistance,depthIndex]=min(abs(newCenters - tracker.cT.meanDepthObj));
                 
                 newLabelData=newLabelRegions==depthIndex;
                 
                 tmpProp=regionprops(newLabelData,'BoundingBox');
                 if(isempty(tmpProp)==true)
-                    tmpBB=trackerDSKCF_struct.currentTarget.segmentedBB;
-                    newLabelData=zeros(size(shapeDSKCF_struct.cumulativeMask));
+                    tmpBB=tracker.cT.segmentedBB;
+                    newLabelData=zeros(size(shape_struct.cumulativeMask));
                 else
                     tmpBB=tmpProp.BoundingBox;
                     %end
                     
                     %tmpCentroid=tmpProp.Centroid;
-                    trackerDSKCF_struct.currentTarget.segmentedBB=ceil([tmpBB(1), ....
-                        tmpBB(2),tmpBB(1)+tmpBB(3),tmpBB(2)+tmpBB(4)]);
+                    tracker.cT.segmentedBB=ceil([tmpBB(1),tmpBB(2),tmpBB(1)+tmpBB(3),tmpBB(2)+tmpBB(4)]);
                     
                     tmpOffset=enlargeBB(newSegmentBB ,0.05,size(depth16Bit));
                     
-                    trackerDSKCF_struct.currentTarget.segmentedBB([1,3])=...
-                        +trackerDSKCF_struct.currentTarget.segmentedBB([1,3])...
-                        +tmpOffset(1);
+                    tracker.cT.segmentedBB([1,3])= +tracker.cT.segmentedBB([1,3])+tmpOffset(1);
                     
-                    trackerDSKCF_struct.currentTarget.segmentedBB([2,4])=...
-                        +trackerDSKCF_struct.currentTarget.segmentedBB([2,4])...
-                        +tmpOffset(2);
+                    tracker.cT.segmentedBB([2,4])=+tracker.cT.segmentedBB([2,4])+tmpOffset(2);
                 end
                 
                 tmpBBforSeg=enlargeBB(newSegmentBB ,0.05,size(depth16Bit));
@@ -164,34 +114,31 @@ if(firstFrame==false)
                 outOfBoundSize=[outOfBoundBB(4)-outOfBoundBB(2)+1,outOfBoundBB(3)-outOfBoundBB(1)+1];
                 
                 [tmpMask,insidePatchIndexes,finalMask]=extractSegmentedPatchV3(newLabelData,...
-                    outOfBoundSize,[trackerDSKCF_struct.currentTarget.posX,trackerDSKCF_struct.currentTarget.posY],...
-                    shapeDSKCF_struct,[size(depth16Bit,2),size(depth16Bit,1)]);
-                
+                    outOfBoundSize,[tracker.cT.posX,tracker.cT.posY], shape_struct,[size(depth16Bit,2),size(depth16Bit,1)]);          
                
-                shapeDSKCF_struct=addSegmentationResults(shapeDSKCF_struct,tmpMask,tmpBBforSeg,tmpOffset,size(depth16Bit));
+                shape_struct=addSegmentationResults(shape_struct,tmpMask,tmpBBforSeg,...
+                    tmpOffset,size(depth16Bit));
             end
             
             %CUMULATIVE SEGMENTATION...
-            tmpBBforSegCumulative=shapeDSKCF_struct.cumulativeBB;
+            tmpBBforSegCumulative=shape_struct.cumulativeBB;
             
-            sizeOfSegmenter=(tmpBBforSegCumulative(3)-tmpBBforSegCumulative(1))...
-                *(tmpBBforSegCumulative(4)-tmpBBforSegCumulative(2));
+            sizeOfSegmenter=(tmpBBforSegCumulative(3)-tmpBBforSegCumulative(1)) *...
+                (tmpBBforSegCumulative(4)-tmpBBforSegCumulative(2));
             
-            sizeOfTarget=(trackerDSKCF_struct.currentTarget.bb(3)-...
-                trackerDSKCF_struct.currentTarget.bb(1))*(trackerDSKCF_struct.currentTarget.bb(4)...
-                -trackerDSKCF_struct.currentTarget.bb(2));
+            sizeOfTarget=(tracker.cT.bb(3)- tracker.cT.bb(1))*(tracker.cT.bb(4) -tracker.cT.bb(2));
             %%sizeOfSegmenter=
-            accumulatedSEGBool=size(shapeDSKCF_struct.maskArray,3)==(shapeDSKCF_struct.slidingWindowSize);
-            sr = scaleDSKCF_struct.InitialDepth / scaleDSKCF_struct.currDepth;
-            targ_sz = round(scaleDSKCF_struct.InitialTargetSize * sr);
+            accumulatedSEGBool=size(shape_struct.maskArray,3)==(shape_struct.slidingWindowSize);
+            sr = scale_struct.InitialDepth / scale_struct.currDepth;
+            targ_sz = round(scale_struct.InitialTargetSize * sr);
             %invert the coordinate as you need to combine this with positions
             srSize= targ_sz([2,1]);
-            currentScaleBB=[pos(:,[2,1]) - srSize/2, pos(:,[2,1]) + srSize/2];
+            cScaleBB=[pos(:,[2,1]) - srSize/2, pos(:,[2,1]) + srSize/2];
             
-            trackerDSKCF_struct.currentTarget.segmentedBB=currentScaleBB;
+            tracker.cT.segmentedBB=cScaleBB;
             
             %No data percentage
-            depthNoData=roiFromBB(noData,trackerDSKCF_struct.currentTarget.bb);
+            depthNoData=roiFromBB(noData,tracker.cT.bb);
             noDataPercent=sum(sum(depthNoData))<0.4*sizeOfTarget;
             
             %minimunSize check
@@ -201,41 +148,39 @@ if(firstFrame==false)
                 minSizeOK= (tmpBBforSegCumulative(3)-tmpBBforSegCumulative(1)>39)...
                     ||(tmpBBforSegCumulative(4)-tmpBBforSegCumulative(2)>39);
             end
-            [tmpBBforSegCumulative,shapeDSKCF_struct,changeOfShapeFlag,newOutput]=...
-                regionModificationCheck(sizeOfSegmenter,sizeOfTarget,...
-                accumulatedSEGBool,noDataPercent,minSizeOK,tmpBBforSegCumulative,...
-                shapeDSKCF_struct,size(depth16Bit),trackerDSKCF_struct);
+            [tmpBBforSegCumulative,shape_struct,changeOfShapeFlag,newOutput]=regionModificationCheck...
+                (sizeOfSegmenter,sizeOfTarget, accumulatedSEGBool,noDataPercent,minSizeOK,tmpBBforSegCumulative,...
+                shape_struct,size(depth16Bit),tracker);
             %if it is not changed the target bb is used
             if(newOutput)
-                trackerDSKCF_struct.currentTarget.segmentedBB=tmpBBforSegCumulative(:)';
+                tracker.cT.segmentedBB=tmpBBforSegCumulative(:)';
             end
             
         end
-        %occlusion condition
-        trackerDSKCF_struct.currentTarget.underOcclusion = abs(p)>0.35 && trackerDSKCF_struct.currentTarget.conf<confInterval1;
+        %occlusion condition  遮挡条件 
+        tracker.cT.underOcclusion = abs(p)>0.35 && tracker.cT.conf<confInterval1;
         
-        if ~trackerDSKCF_struct.currentTarget.underOcclusion
+        if ~tracker.cT.underOcclusion
             %eventually correct the frameCurr.targetDepthFast
-            if(trackerDSKCF_struct.currentTarget.meanDepthObj~=estimatedDepth && minIndexReduced==1)
-                trackerDSKCF_struct.currentTarget.meanDepthObj=estimatedDepth;
-                trackerDSKCF_struct.currentTarget.stdDepthObj=estimatedSTD;
+            if(tracker.cT.meanDepthObj~=estimatedDepth && minIndexReduced==1)
+                tracker.cT.meanDepthObj=estimatedDepth;
+                tracker.cT.stdDepthObj=estimatedSTD;
             end
         end
         
         
-        %IF UNDER OCCLUSION START TO SEGMENT OCCLUDER AND OCCLUDED
-        %OBJECTS
-        if trackerDSKCF_struct.currentTarget.underOcclusion,
+        %当前处于遮挡，分割出遮挡物体，并且初始化 这遮挡物额跟踪器
+        if tracker.cT.underOcclusion,
             % initialize occlusion
-            [tmpOccBB] = occludingObjectSegDSKCF(depth16Bit,trackerDSKCF_struct);
+            [tmpOccBB] = occludingObjectSegDSKCF(depth16Bit,tracker);
             
             if (isempty(tmpOccBB) | isnan(tmpOccBB) )
-                trackerDSKCF_struct.currentTarget.underOcclusion = 0;
+                tracker.cT.underOcclusion = 0;
             else
-                if trackerDSKCF_struct.currentTarget.conf <0.15,
-                    trackerDSKCF_struct.currentTarget.bb = [];
+                if tracker.cT.conf <0.15,
+                    tracker.cT.bb = [];
                 end
-                trackerDSKCF_struct.currentTarget.occBB = tmpOccBB;
+                tracker.cT.occBB = tmpOccBB;
             end
             
             %occlusion detected......is time to fill the struct
@@ -246,108 +191,62 @@ if(firstFrame==false)
             if (isempty(tmpOccBB)==false)
                 
                 %delete cumulative Mask
-                shapeDSKCF_struct=initDSKCFshape(5,0);
+                shape_struct=initDSKCFshape(5,0);
                 %assign the occluding bb to the occluder data struct
-                trackerDSKCF_structOccluder.previousTarget.bb=...
-                    tmpOccBB;
+                tracker_Occ.pT.bb=tmpOccBB;
                 
-                [trackerDSKCF_structOccluder.previousTarget.posX,...
-                    trackerDSKCF_structOccluder.previousTarget.posY...
-                    trackerDSKCF_structOccluder.previousTarget.w,...
-                    trackerDSKCF_structOccluder.previousTarget.h]...
+                [tracker_Occ.pT.posX, tracker_Occ.pT.posY, tracker_Occ.pT.w,tracker_Occ.pT.h]...
                     =fromBBtoCentralPoint(tmpOccBB);
                 
-                trackerDSKCF_structOccluder.target_sz=...
-                    [trackerDSKCF_structOccluder.previousTarget.h, ...
-                    trackerDSKCF_structOccluder.previousTarget.w];
+                tracker_Occ.target_sz= [tracker_Occ.pT.h,  tracker_Occ.pT.w];
                 
-                trackerDSKCF_structOccluder.window_sz = floor(...
-                    trackerDSKCF_structOccluder.target_sz *...
-                    (1 + DSKCFparameters_Occluder.padding));
+                tracker_Occ.window_sz = floor( tracker_Occ.target_sz * (1 + DSpara_Occ.padding));
                 
-                trackerDSKCF_structOccluder.output_sigma = sqrt(prod(...
-                    trackerDSKCF_structOccluder.target_sz)) * ...
-                    DSKCFparameters_Occluder.output_sigma_factor / ...
-                    DSKCFparameters_Occluder.cell_size;
+                tracker_Occ.output_sigma = sqrt(prod(tracker_Occ.target_sz)) * DSpara_Occ.output_sigma_factor /DSpara_Occ.cell_size;
                 
-                trackerDSKCF_structOccluder.yf = fft2(gaussian_shaped_labels(...
-                    trackerDSKCF_structOccluder.output_sigma, floor(...
-                    trackerDSKCF_structOccluder.window_sz / DSKCFparameters_Occluder.cell_size)));
+                tracker_Occ.yf = fft2(gaussian_shaped_labels( tracker_Occ.output_sigma, floor(...
+                    tracker_Occ.window_sz / DSpara_Occ.cell_size)));
                 
                 %store pre-computed cosine window
-                trackerDSKCF_structOccluder.cos_window = hann(size(...
-                    trackerDSKCF_structOccluder.yf,1)) * hann(size(...
-                    trackerDSKCF_structOccluder.yf,2))';
+                tracker_Occ.cos_window = hann(size( tracker_Occ.yf,1)) * hann(size( tracker_Occ.yf,2))';
                 
-                [trackerDSKCF_structOccluder]=singleFrameDSKCF_occluder(1,im,...
-                    depth,trackerDSKCF_structOccluder,DSKCFparameters_Occluder);
+                [tracker_Occ]=singleFrameDSKCF_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
                 
                 %update target size in the current object tracker
-                trackerDSKCF_structOccluder.currentTarget=...
-                    trackerDSKCF_structOccluder.previousTarget;
+                tracker_Occ.cT=tracker_Occ.pT;
             end
         end
         
  
         
-    else  
-        %PREVIOUS FRAME UNDER OCCLUSION....
-        %遮挡的情况
-
-        %track the occluded object!!!
-        %跟踪遮挡物
-        [trackerDSKCF_structOccluder,occludedPos]=singleFrameDSKCF_occluder(0,im,...
-            depth,trackerDSKCF_structOccluder,DSKCFparameters_Occluder);
+    else  %PREVIOUS FRAME UNDER OCCLUSION....上一帧处于遮挡状态     跟踪遮挡物
+        [tracker_Occ,occludedPos]=singleFrameDSKCF_occluder(0,im,depth,tracker_Occ,DSpara_Occ);
         
         %update occluder previous position for tracking...
-        trackerDSKCF_structOccluder.previousTarget.posX=...
-            trackerDSKCF_structOccluder.currentTarget.posX;
-        trackerDSKCF_structOccluder.previousTarget.posY=...
-            trackerDSKCF_structOccluder.currentTarget.posY;
+        tracker_Occ.pT.posX= tracker_Occ.cT.posX;
+        tracker_Occ.pT.posY= tracker_Occ.cT.posY;
         
         
-        if isempty(trackerDSKCF_structOccluder.currentTarget.bb),
-            trackerDSKCF_structOccluder.currentTarget.bb = ...
-                trackerDSKCF_structOccluder.previousTarget.bb;
+        if isempty(tracker_Occ.cT.bb),
+            tracker_Occ.cT.bb =  tracker_Occ.pT.bb;
         end
         %then update the previous
-        trackerDSKCF_structOccluder.previousTarget.bb=...
-            trackerDSKCF_structOccluder.currentTarget.bb;
+        tracker_Occ.pT.bb=  tracker_Occ.cT.bb;
         
         %update occluder bb in the main target
-        trackerDSKCF_struct.currentTarget.occBB=trackerDSKCF_structOccluder.currentTarget.bb;
-        
+        tracker.cT.occBB=tracker_Occ.cT.bb;
 
-
-        
-        %enlarge searching reagion...
-        if(isempty(trackerDSKCF_struct.previousTarget.bb)==false)
-            extremaBB=[min([trackerDSKCF_struct.currentTarget.occBB(1),...
-                trackerDSKCF_struct.previousTarget.occBB(1),...
-                trackerDSKCF_struct.previousTarget.bb(1)]),...
-                min([trackerDSKCF_struct.currentTarget.occBB(2),...
-                trackerDSKCF_struct.previousTarget.occBB(2),...
-                trackerDSKCF_struct.previousTarget.bb(2)]),...
-                max([trackerDSKCF_struct.currentTarget.occBB(3),...
-                trackerDSKCF_struct.previousTarget.occBB(3),...
-                trackerDSKCF_struct.previousTarget.bb(3)]),...
-                max([trackerDSKCF_struct.currentTarget.occBB(4),...
-                trackerDSKCF_struct.previousTarget.occBB(4),...
-                trackerDSKCF_struct.previousTarget.bb(4)])];
+        %enlarge searching reagion...扩大搜索区域
+        if(isempty(tracker.pT.bb)==false)
+            extremaBB=[min([tracker.cT.occBB(1),  tracker.pT.occBB(1), tracker.pT.bb(1)]), min([tracker.cT.occBB(2),...
+                tracker.pT.occBB(2), tracker.pT.bb(2)]),max([tracker.cT.occBB(3),tracker.pT.occBB(3),...
+                tracker.pT.bb(3)]), max([tracker.cT.occBB(4), tracker.pT.occBB(4), tracker.pT.bb(4)])];
             
-            extremaBB=[max(extremaBB(1),1),max(extremaBB(2),1),...
-                min(extremaBB(3),size(im,2)),min(extremaBB(4),size(im,1))];
+            extremaBB=[max(extremaBB(1),1),max(extremaBB(2),1), min(extremaBB(3),size(im,2)),min(extremaBB(4),size(im,1))];
         else
-            extremaBB=[min(trackerDSKCF_struct.currentTarget.occBB(1),...
-                trackerDSKCF_struct.previousTarget.occBB(1)),...
-                min(trackerDSKCF_struct.currentTarget.occBB(2),...
-                trackerDSKCF_struct.previousTarget.occBB(2)),...
-                max(trackerDSKCF_struct.currentTarget.occBB(3),...
-                trackerDSKCF_struct.previousTarget.occBB(3)),...
-                max(trackerDSKCF_struct.currentTarget.occBB(4),...
-                trackerDSKCF_struct.previousTarget.occBB(4))];
-            extremaBB=[max(extremaBB(1),1),max(extremaBB(2),1),...
-                min(extremaBB(3),size(im,2)),min(extremaBB(4),size(im,1))];
+            extremaBB=[min(tracker.cT.occBB(1), tracker.pT.occBB(1)), min(tracker.cT.occBB(2), tracker.pT.occBB(2)),...
+                max(tracker.cT.occBB(3), tracker.pT.occBB(3)),max(tracker.cT.occBB(4), tracker.pT.occBB(4))];
+            extremaBB=[max(extremaBB(1),1),max(extremaBB(2),1), min(extremaBB(3),size(im,2)),min(extremaBB(4),size(im,1))];
             
         end
         
@@ -361,63 +260,54 @@ if(firstFrame==false)
         
         %in case of bounding box with no depth data....
         if(sum(sum(depthNoData)')==size(front_depth,1)*size(front_depth,2))
-            trackerDSKCF_struct.currentTarget.LabelRegions=depthNoData>10000000;
-            trackerDSKCF_struct.currentTarget.Centers=1000000;
-            trackerDSKCF_struct.currentTarget.LUT=[];
+            tracker.cT.LabelRegions=depthNoData>10000000;
+            tracker.cT.Centers=1000000;
+            tracker.cT.LUT=[];
             %eventually segment the current occluding area
         else
             %note, we are saving the segmentation of the occluding region,
             %in the target struct rather thant the other one!!!!!
-            [trackerDSKCF_struct.currentTarget.LabelRegions,...
-                trackerDSKCF_struct.currentTarget.Centers,...
-                trackerDSKCF_struct.currentTarget.LUT,~,~,~]=...
-                fastDepthSegmentationDSKCF_noiseModel(front_depth,3,depthNoData,...
-                1,[-1 -1 -1],1,trackerDSKCF_struct.currentTarget.meanDepthObj,...
-                trackerDSKCF_struct.currentTarget.stdDepthObj,[2.3,0.00055,0.00000235]);
+            [tracker.cT.LabelRegions, tracker.cT.Centers, tracker.cT.LUT,~,~,~]=...
+                fastDepthSegmentationDSKCF_noiseModel(front_depth,3,depthNoData, 1,[-1 -1 -1],...
+                1,tracker.cT.meanDepthObj, tracker.cT.stdDepthObj,[2.3,0.00055,0.00000235]);
             
         end
         
-        %filter out very small regions
-        %过滤掉小面积的区域
-        tmpProp=regionprops(trackerDSKCF_struct.currentTarget.LabelRegions,'Area');
+        %filter out very small regions过滤掉小面积的区域
+        tmpProp=regionprops(tracker.cT.LabelRegions,'Area');
         areaList= cat(1, tmpProp.Area);
-        minArea=scaleDSKCF_struct.target_sz(currentScale).target_sz(2)*...
-            scaleDSKCF_struct.target_sz(currentScale).target_sz(1)*0.05;
+        minArea=scale_struct.target_sz(cScale).target_sz(2)*scale_struct.target_sz(cScale).target_sz(1)*0.05;
         
         areaSmallIndex=areaList<minArea;
         
         %exclude the small area index setting a super high depth!!!!!!!!
         %it will never be used
-        trackerDSKCF_struct.currentTarget.Centers(:,areaSmallIndex)= 1000000;
+        tracker.cT.Centers(:,areaSmallIndex)= 1000000;
         
-        [dummyVal,trackerDSKCF_struct.currentTarget.regionIndex]=...
-            min(trackerDSKCF_struct.currentTarget.Centers);
+        [dummyVal,tracker.cT.regionIndex]=...
+            min(tracker.cT.Centers);
         
         %very bad segmentation, full of small regions. Set up a flag....
         if(dummyVal==1000000)
-            trackerDSKCF_struct.currentTarget.regionIndex=6666666;
+            tracker.cT.regionIndex=6666666;
         end
         
-        %search for target's candidates in the search region.....
-        [tarBB, segmentedOccBB, targetList, targetIndex,occmask] =  ...
-            targetSearchDSKCF(bbIn, trackerDSKCF_struct, DSKCFparameters,...
-            im,depth,depth16Bit,scaleDSKCF_struct,confValue3);
+        %search for target's candidates in the search region.....在搜索区域寻找目标的候选块
+        [tarBB, segmentedOccBB, targetList, targetIndex,occmask] = targetSearchDSKCF(bbIn, tracker, DSpara,...
+            im,depth,depth16Bit,scale_struct,confValue3);
         tarBBSegmented=[];
         if(isempty(segmentedOccBB)==false)
-            extremaBB=[min([trackerDSKCF_struct.currentTarget.occBB(1),...
-                segmentedOccBB(1)]),min([trackerDSKCF_struct.currentTarget.occBB(2),...
-                segmentedOccBB(2)]),max([trackerDSKCF_struct.currentTarget.occBB(3),...
-                segmentedOccBB(3)]),max([trackerDSKCF_struct.currentTarget.occBB(4),...
+            extremaBB=[min([tracker.cT.occBB(1),segmentedOccBB(1)]),min([tracker.cT.occBB(2),...
+                segmentedOccBB(2)]),max([tracker.cT.occBB(3),segmentedOccBB(3)]),max([tracker.cT.occBB(4),...
                 segmentedOccBB(4)])];
             
-            trackerDSKCF_struct.currentTarget.occBB=[max(extremaBB(1),1),...
-                max(extremaBB(2),1),min(extremaBB(3),size(im,2)),...
+            tracker.cT.occBB=[max(extremaBB(1),1), max(extremaBB(2),1),min(extremaBB(3),size(im,2)),...
                 min(extremaBB(4),size(im,1))]';
             
         end
         
-        if(isempty(trackerDSKCF_struct.currentTarget.occBB))
-            trackerDSKCF_struct.currentTarget.occBB=trackerDSKCF_struct.previousTarget.occBB;
+        if(isempty(tracker.cT.occBB))
+            tracker.cT.occBB=tracker.pT.occBB;
         end
         
         %THESE CANDIDATES....CAME FROM THE SEGMENTATIONS....YOU NEED TO
@@ -429,16 +319,16 @@ if(firstFrame==false)
             heighttarBB=tarBB(4)-tarBB(2);
             centerNew=floor([tarBB(1)+widthtarBB/2 tarBB(2)+heighttarBB/2]);
             
-            tarBB(1:2)=centerNew - scaleDSKCF_struct.target_sz(scaleDSKCF_struct.i).target_sz([2 1])/2;
-            tarBB(3:4)=centerNew + scaleDSKCF_struct.target_sz(scaleDSKCF_struct.i).target_sz([2 1])/2;
+            tarBB(1:2)=centerNew - scale_struct.target_sz(scale_struct.i).target_sz([2 1])/2;
+            tarBB(3:4)=centerNew + scale_struct.target_sz(scale_struct.i).target_sz([2 1])/2;
             
         end
         
         
         % calculate detection and segmentation consistency
-        trackerDSKCF_struct.currentTarget.bb = tarBB;
-        trackerDSKCF_struct.currentTarget.conf = targetList.Conf_class(targetIndex);
-        trackerDSKCF_struct.currentTarget.segmentedBB = tarBB';
+        tracker.cT.bb = tarBB;
+        tracker.cT.conf = targetList.Conf_class(targetIndex);
+        tracker.cT.segmentedBB = tarBB';
         
         
         %%Kill some strange respons on the occluding mask
@@ -451,35 +341,30 @@ if(firstFrame==false)
             %re-assign new position to the target, even if the target is
             %not valid, you need this just for visualization or checking
             %the algorithm....
-            [trackerDSKCF_struct.currentTarget.posX,...
-                trackerDSKCF_struct.currentTarget.posY...
-                trackerDSKCF_struct.currentTarget.w,...
-                trackerDSKCF_struct.currentTarget.h]...
-                =fromBBtoCentralPoint(trackerDSKCF_struct.currentTarget.bb);
+            [tracker.cT.posX, tracker.cT.posY, tracker.cT.w,tracker.cT.h]=fromBBtoCentralPoint(tracker.cT.bb);
             %update tracker struct, new position etc
-            pos(2)=trackerDSKCF_struct.currentTarget.posX;
-            pos(1)=trackerDSKCF_struct.currentTarget.posY;
+            pos(2)=tracker.cT.posX;
+            pos(1)=tracker.cT.posY;
             
             if(tmpMask(centerNew(2),centerNew(1))==1)
-                trackerDSKCF_struct.currentTarget.conf=0;
+                tracker.cT.conf=0;
             end
         end
         
         % check recovery
-        trackerDSKCF_struct.currentTarget.underOcclusion =1;
-        if ~isempty(trackerDSKCF_struct.currentTarget.bb)
-            [p, TMPtargetDepth,TMPtargetStd,TMPLabelRegions,TMPCenters,...
+        tracker.cT.underOcclusion =1;
+        if ~isempty(tracker.cT.bb)
+            [p, TMpTDepth,TMpTStd,TMPLabelRegions,TMPCenters,...
                 TMPregionIndex,TMPLUT,secondPlaneDepth,secondPlaneDepthStd] ...
-                = checkOcclusionsDSKCF_secondPlane(depth16Bit,...
-                noData,trackerDSKCF_struct, trackerDSKCF_struct.currentTarget.bb);
+                = checkOcclusionsDSKCF_secondPlane(depth16Bit,noData,tracker, tracker.cT.bb);
             
-            if trackerDSKCF_struct.currentTarget.conf > confInterval1/2 && p<0.35,
-                trackerDSKCF_struct.currentTarget.underOcclusion =0;
-                trackerDSKCF_struct.currentTarget.segmentedBB = tarBBSegmented';
+            if tracker.cT.conf > confInterval1/2 && p<0.35,
+                tracker.cT.underOcclusion =0;
+                tracker.cT.segmentedBB = tarBBSegmented';
             end
             
-            if ~trackerDSKCF_struct.currentTarget.underOcclusion,
-                tmpWeight = max(0,min(1,trackerDSKCF_struct.currentTarget.conf));
+            if ~tracker.cT.underOcclusion,
+                tmpWeight = max(0,min(1,tracker.cT.conf));
                 
             else
                 tmpWeight = 0;
@@ -487,8 +372,8 @@ if(firstFrame==false)
             
             
             if(isempty(secondPlaneDepth)==false)
-                TMPtargetDepth=secondPlaneDepth;
-                TMPtargetStd=secondPlaneDepthStd;
+                TMpTDepth=secondPlaneDepth;
+                TMpTStd=secondPlaneDepthStd;
                 tmpWeight=tmpWeight*2.5;
                 if(tmpWeight>1)
                     tmpWeight=0.95;
@@ -496,12 +381,12 @@ if(firstFrame==false)
                 
             end
             
-            trackerDSKCF_struct.currentTarget.meanDepthObj = tmpWeight * TMPtargetDepth + (1-tmpWeight) * trackerDSKCF_struct.currentTarget.meanDepthObj;
-            trackerDSKCF_struct.currentTarget.stdDepthObj = tmpWeight * TMPtargetStd + (1-tmpWeight) * trackerDSKCF_struct.currentTarget.stdDepthObj;
+            tracker.cT.meanDepthObj = tmpWeight * TMpTDepth + (1-tmpWeight) * tracker.cT.meanDepthObj;
+            tracker.cT.stdDepthObj = tmpWeight * TMpTStd + (1-tmpWeight) * tracker.cT.stdDepthObj;
             
         else
-            trackerDSKCF_struct.currentTarget.meanDepthObj = trackerDSKCF_struct.previousTarget.meanDepthObj;
-            trackerDSKCF_struct.currentTarget.stdDepthObj = trackerDSKCF_struct.previousTarget.stdDepthObj;
+            tracker.cT.meanDepthObj = tracker.pT.meanDepthObj;
+            tracker.cT.stdDepthObj = tracker.pT.stdDepthObj;
         end
         
    
@@ -511,73 +396,57 @@ if(firstFrame==false)
 end  %if(firstFrame==false)
 %  更新阶段
 %IF UNDER OCCLUSION DON'T UPDATE.....
-if(trackerDSKCF_struct.previousTarget.underOcclusion==false && trackerDSKCF_struct.currentTarget.underOcclusion==false)
-    additionalShapeInterpolation=0;
-
+if(tracker.pT.underOcclusion==false && tracker.cT.underOcclusion==false)
     
-
-    %check for scale change
-    %检查尺度变化
+    additionalShapeInterpolation=0;
+    %check for scale change检查尺度变化
     if(firstFrame==false)
-        scaleDSKCF_struct=getScaleFactorStruct(trackerDSKCF_struct.currentTarget.meanDepthObj,scaleDSKCF_struct);
-        if(changeOfShapeFlag && scaleDSKCF_struct.updated==false)
-               [scaleDSKCF_struct,newPosShape,additionalShapeInterpolation,shapeDSKCF_struct]=...
-                   getShapeFactorStructDirectionsV2(trackerDSKCF_struct.currentTarget.segmentedBB,pos,...
-                trackerDSKCF_struct.currentTarget.meanDepthObj,scaleDSKCF_struct,shapeDSKCF_struct);
+        scale_struct=getScaleFactorStruct(tracker.cT.meanDepthObj,scale_struct);
+        if(changeOfShapeFlag && scale_struct.updated==false)
+               [scale_struct,newPosShape,additionalShapeInterpolation,shape_struct]=...
+                   getShapeFactorStructDirectionsV2(tracker.cT.segmentedBB,pos, tracker.cT.meanDepthObj,scale_struct,shape_struct);
         end
     end
     
-
-    
-
-
-    
     %obtain a subwindow for training at newly estimated target position
-    patch = get_subwindow(im, pos, scaleDSKCF_struct.windows_sizes(scaleDSKCF_struct.i).window_sz);
-    patch_depth = get_subwindow(depth, pos, scaleDSKCF_struct.windows_sizes(scaleDSKCF_struct.i).window_sz);
+    patch = get_subwindow(im, pos, scale_struct.windows_sizes(scale_struct.i).window_sz);
+    patch_depth = get_subwindow(depth, pos, scale_struct.windows_sizes(scale_struct.i).window_sz);
     
-    %check for detections....and generate the new weights
-    %detWf=fft2(detW);
-    detWf=scaleDSKCF_struct.yfs(scaleDSKCF_struct.i).yf;%fft2(detW);
-    %update the model
-    %更新模型
-    [trackerDSKCF_struct.model_alphaf, trackerDSKCF_struct.model_alphaDf, ...
-        trackerDSKCF_struct.model_xf, trackerDSKCF_struct.model_xDf]=...
-        modelUpdateDSKCF(firstFrame,patch,patch_depth,DSKCFparameters.features,...
-        DSKCFparameters.cell_size,scaleDSKCF_struct.cos_windows(scaleDSKCF_struct.i).cos_window,...
-        DSKCFparameters.kernel,detWf,...
-        DSKCFparameters.lambda,trackerDSKCF_struct.model_alphaf, ...
-        trackerDSKCF_struct.model_alphaDf,trackerDSKCF_struct.model_xf,...
-        trackerDSKCF_struct.model_xDf,scaleDSKCF_struct.updated,DSKCFparameters.interp_factor+additionalShapeInterpolation);
+    %根据尺度的变化 选择相应的目标函数
+    detWf=scale_struct.yfs(scale_struct.i).yf;%fft2(detW);
+    %update the model更新模型
+    [tracker.model_alphaf, tracker.model_alphaDf, tracker.model_xf, tracker.model_xDf]=...
+        modelUpdateDSKCF(firstFrame,patch,patch_depth,DSpara.features,...
+        DSpara.cell_size,scale_struct.cos_windows(scale_struct.i).cos_window,DSpara.kernel,detWf,...
+        DSpara.lambda,tracker.model_alphaf, tracker.model_alphaDf,tracker.model_xf,...
+        tracker.model_xDf,scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
     
     %if scale changed you must change tracker size information
     %更新尺度的变化
-    if(scaleDSKCF_struct.updated)
+    if(scale_struct.updated)
         %[newH,newW]= ;
-        trackerDSKCF_struct.currentTarget.h=scaleDSKCF_struct.target_sz(scaleDSKCF_struct.i).target_sz(1);
-        trackerDSKCF_struct.currentTarget.w=scaleDSKCF_struct.target_sz(scaleDSKCF_struct.i).target_sz(2);
+        tracker.cT.h=scale_struct.target_sz(scale_struct.i).target_sz(1);
+        tracker.cT.w=scale_struct.target_sz(scale_struct.i).target_sz(2);
         
         %reinit tracker shape
         relativeShapeScaleFactor=0;
-        if(shapeDSKCF_struct.growingStatus==true)
-            relativeShapeScaleFactor=1+(scaleDSKCF_struct.i-scaleDSKCF_struct.iPrev)*scaleDSKCF_struct.step;
+        if(shape_struct.growingStatus==true)
+            relativeShapeScaleFactor=1+(scale_struct.i-scale_struct.iPrev)*scale_struct.step;
             %shapeScaleFactor=scaleDSKCF_struct
         end
-        shapeDSKCF_struct=initDSKCFshape(5,relativeShapeScaleFactor,shapeDSKCF_struct);
+        shape_struct=initDSKCFshape(5,relativeShapeScaleFactor,shape_struct);
         
     end
-    
-
     
 else
     %%THERE IS AN OCCLUSION.....NOW WHAT TO DO.....? DON'T UPDATE MODEL....
     %UPDATE ONLY POSITION!!!!!
     %遮挡情况下，不更新模型 只更新位置
     % TO BE CHECKEDD!!!!!
-    if(isempty(trackerDSKCF_struct.currentTarget.bb))
+    if(isempty(tracker.cT.bb))
         pos=[];
     else
-        pos=[trackerDSKCF_struct.currentTarget.posY,trackerDSKCF_struct.currentTarget.posX];
+        pos=[tracker.cT.posY,tracker.cT.posX];
     end
 end
 

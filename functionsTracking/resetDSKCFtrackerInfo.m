@@ -1,4 +1,4 @@
-function trackerDSKCF_struct=resetDSKCFtrackerInfo(trackerDSKCF_struct)
+function tracker=resetDSKCFtrackerInfo(tracker)
 % RESETDSKCFTRACKERINFO.m re-initializes the data structure for DS-KCF tracker before processing a new frame[1]
 % 
 %   RESETDSKCFTRACKERINFO re-initializes the data structure for DS-KCF
@@ -21,8 +21,8 @@ function trackerDSKCF_struct=resetDSKCFtrackerInfo(trackerDSKCF_struct)
 %  hannuna@compsci.bristol.ac.uk
 
 %trackerDSKCF_struct=trackerDSKCF_structIN;
-trackerDSKCF_struct.currentTarget.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
-trackerDSKCF_struct.currentTarget.totalOcc=0; % total occlusion flag
-trackerDSKCF_struct.currentTarget.underOcclusion=0; % under occlusion flag
-trackerDSKCF_struct.currentTarget.conf=0;
+tracker.cT.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
+tracker.cT.totalOcc=0; % total occlusion flag
+tracker.cT.underOcclusion=0; % under occlusion flag
+tracker.cT.conf=0;
 
