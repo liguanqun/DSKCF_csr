@@ -1,5 +1,5 @@
-function [dsKCFoutput] =  wrapperDSKCF(video_path, depth_path, img_files, depth_files, pos, target_sz, ...
-    DSpara, show_visualization,video)
+function [dsKCFoutput] =  wrapperDSKCF_CSR(video_path, depth_path, img_files, depth_files,...
+                                        pos, target_sz,DSpara, show_visualization,video)
 
      resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
@@ -94,7 +94,7 @@ for frame = 1:numel(img_files),
     %第一张图像 用来初始化
     if(firstFrame)
         segmentedMASK=repmat(0,size(frameCurr.depth));%
-        tracker=initDSKCFtracker();
+        tracker=initDSKCF_CSRtracker();
         %check if the scale is properly initialized....
         if(isempty(tracker))
             disp('DS-KCF tracker structure initialization failed, tracking aborted');
@@ -120,6 +120,11 @@ for frame = 1:numel(img_files),
             tracker.pT.regionIndex,tracker.pT.Centers, tracker.pT.LUT] = ...
             initDistributionFast(tracker.pT.bb,framePrev.depth16Bit,framePrev.depthNoData);
         
+        % mask init
+        mask =tracker.pT.LabelRegions;
+        mask(mask ~= tracker.pT.regionIndex)=0;
+         mask(mask==tracker.pT.regionIndex)=1;
+         tracker.mask =mask;
         %for the first frame copy everything also in the current target
         %第一张图像 当前图像和前一张图像的参数相同
         tracker.cT=tracker.pT;
@@ -261,4 +266,3 @@ end
 
 
 end
-

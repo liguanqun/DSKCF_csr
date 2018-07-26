@@ -48,8 +48,8 @@ gain_y = out_y_sz/in_y_sz;
 
 % build grid vectors for the up/down sampling
 % ============================================
-% if the input is even & output is odd-> use floor for all
-% if the output is even & input is odd -> use ceil for all
+% if the input is even偶数 & output is odd奇数-> use floor for all
+% if the output is even偶数 & input is odd奇数 -> use ceil for all
 % other cases - don't care
 % for downsampling -> the opposite
 if (~mod( in_x_sz,2 ) & (out_x_sz>in_x_sz)) | (mod( in_x_sz,2 ) & (out_x_sz<in_x_sz))

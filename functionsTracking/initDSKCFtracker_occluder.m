@@ -65,32 +65,32 @@ function tracker_occ=initDSKCFtracker_occluder()
 
 tracker_occ=[];
 
-% current target position and bounding box
+%% 目标的位置尺寸 current target position and bounding box
 tracker_occ.cT.posX=0;%column in the image plane
 tracker_occ.cT.posY=0;%row in the image plane
 tracker_occ.cT.h=0;%height of the target
 tracker_occ.cT.w=0;%width in the image planeof the target
 tracker_occ.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
 tracker_occ.cT.conf=0;
-%occluder tracking field (in this way you no need the scale data struct)
+%% 尺度信息，直接赋值，不需要尺度结构
 tracker_occ.window_sz=[];
 tracker_occ.output_sigma=[];
 tracker_occ.yf=[];
 tracker_occ.cos_window=[];
 tracker_occ.target_sz=[];
 
-%current target depth distribution info
+%% 当前目标的深度分布current target depth distribution info
 tracker_occ.cT.meanDepthObj=0;% mean depth of the tracker object
 tracker_occ.cT.stdDepthObj=0;% depth's standard deviation of the tracker object
 tracker_occ.cT.LabelRegions=[];%cluster labels of the segmented target region
 tracker_occ.cT.regionIndex=0;%label of the object cluster
 tracker_occ.cT.Centers=[];%depth centers of the clusters
 tracker_occ.cT.LUT=[];%LUT
-%current target depth occluding info
+%% 当前目标的深度遮挡current target depth occluding info
 tracker_occ.cT.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
 tracker_occ.cT.totalOcc=0; % total occlusion flag
 tracker_occ.cT.underOcclusion=0; % under occlusion flag
-%target model alpha and X, see [1] for more details
+%%  目标的模型参数 target model alpha and X, see [1] for more details
 tracker_occ.model_alphaf = []; 
 tracker_occ.model_alphaDf = [];
 tracker_occ.model_xf = [];

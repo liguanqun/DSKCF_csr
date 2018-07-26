@@ -1,4 +1,4 @@
-function tracker_struct=initDSKCFtracker()
+function tracker=initDSKCFtracker()
 % INITDSKCFTRACKER.m initializes the data structure for DS-KCF tracker [1]
 % 
 %   INITDSKCFTRACKER function initializes the data structure of the
@@ -51,35 +51,35 @@ function tracker_struct=initDSKCFtracker()
 %  massimo.camplani@bristol.ac.uk 
 %  hannuna@compsci.bristol.ac.uk
 
-tracker_struct=[];
+tracker=[];
 
 % current target position and bounding box
-tracker_struct.cT.posX=0;%column in the image plane
-tracker_struct.cT.posY=0;%row in the image plane
-tracker_struct.cT.h=0;%height of the target
-tracker_struct.cT.w=0;%width in the image planeof the target
-tracker_struct.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
-tracker_struct.cT.conf=0;
+tracker.cT.posX=0;%column in the image plane
+tracker.cT.posY=0;%row in the image plane
+tracker.cT.h=0;%height of the target
+tracker.cT.w=0;%width in the image planeof the target
+tracker.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
+tracker.cT.conf=0;
 %current target depth distribution info
-tracker_struct.cT.meanDepthObj=0;% mean depth of the tracker object
-tracker_struct.cT.stdDepthObj=0;% depth's standard deviation of the tracker object
-tracker_struct.cT.LabelRegions=[];%cluster labels of the segmented target region
-tracker_struct.cT.regionIndex=0;%label of the object cluster
-tracker_struct.cT.Centers=[];%depth centers of the clusters
-tracker_struct.cT.LUT=[];%LUT
-tracker_struct.cT.segmentedBB=[];%bounding box of the corresponding sgmented region
+tracker.cT.meanDepthObj=0;% mean depth of the tracker object
+tracker.cT.stdDepthObj=0;% depth's standard deviation of the tracker object
+tracker.cT.LabelRegions=[];%cluster labels of the segmented target region
+tracker.cT.regionIndex=0;%label of the object cluster
+tracker.cT.Centers=[];%depth centers of the clusters
+tracker.cT.LUT=[];%LUT
+tracker.cT.segmentedBB=[];%bounding box of the corresponding sgmented region
 %current target depth occluding info
-tracker_struct.cT.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
-tracker_struct.cT.totalOcc=0; % total occlusion flag
-tracker_struct.cT.underOcclusion=0; % under occlusion flag
+tracker.cT.occBB=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
+tracker.cT.totalOcc=0; % total occlusion flag
+tracker.cT.underOcclusion=0; % under occlusion flag
 %target model alpha and X, see [1] for more details
-tracker_struct.model_alphaf = []; 
-tracker_struct.model_alphaDf = [];
-tracker_struct.model_xf = [];
-tracker_struct.model_xDf = [];
+tracker.model_alphaf = []; 
+tracker.model_alphaDf = [];
+tracker.model_xf = [];
+tracker.model_xDf = [];
 
 
 %previous target entries
-tracker_struct.pT=tracker_struct.cT;
+tracker.pT=tracker.cT;
 
 

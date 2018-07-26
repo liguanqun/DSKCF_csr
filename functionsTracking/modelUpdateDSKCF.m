@@ -147,7 +147,7 @@ else
                 
             elseif(noChangeFlag)
                 aaaaa=0;
-            else
+            else  %   here will run 
                 model_alphaf = updownsample_fourier( model_alphaf,size(alphaf,2),size(alphaf ,1));
                 model_xf_ = xf;
                 for i = 1:size(xf,3)
