@@ -136,7 +136,7 @@ for frame = 1:numel(img_files),
         
         %initialize structures for the occluder object
         %遮挡物体的跟踪结构跟 目标的跟踪结构 不同，增加了一些关于遮挡物的数据
-        tracker_Occ=initDSKCFtracker_occluder();
+        tracker_Occ=initDSKCF_CSRtracker_occluder();
         %跟踪器的参数相同
         DSpara_Occ=DSpara;%these need to be resetted eventually in some parts
         
@@ -156,7 +156,7 @@ for frame = 1:numel(img_files),
     %DS-KCF tracker code need as input the position expressed as [y x],
     %remember this particular while reading the code!!!!!
 
-    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,segmentedMASK,shape_struct]=...
+    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
         singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
 
     
@@ -174,15 +174,10 @@ for frame = 1:numel(img_files),
         %empty tracking, so mark this frame
         if(isempty(pos))
             bbToPlot=[];
-
-        else
-     
-            
+        else      
             %use the Sr scale factor (see [1] for more details)
             sr = scale_struct.InitialDepth / scale_struct.currDepth;
-            
-            targ_sz = round(scale_struct.InitialTargetSize * sr);
-            
+            targ_sz = round(scale_struct.InitialTargetSize * sr);         
             %calculate the corresponding bounding box for Plotting!!!!
             %in this case we need [topLeftX, topLeftY,W,H]
             bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
@@ -204,14 +199,14 @@ for frame = 1:numel(img_files),
         
         
         if(frame==1)
-            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',4,'DS-KCF','Occluder',myFigColor,frame);
-            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',4,'DS-KCF','Occluder',myFigDepth,frame);
+            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
+            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
 %              pause()
         else
             clf(myFigColor);
-            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',4,'DS-KCF','Occluder',myFigColor,frame);       
+            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);       
             clf(myFigDepth);
-            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',4,'DS-KCF','Occluder',myFigDepth,frame);
+            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
             drawnow
 %              pause()
         end
@@ -231,18 +226,19 @@ for frame = 1:numel(img_files),
         sr = scale_struct.InitialDepth / scale_struct.currDepth;
         targ_sz = round(scale_struct.InitialTargetSize * sr);
         
-        %保存
+        %保存  转为opencv下的矩形
           bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
           if(resize_image)
                 bbToPlot=bbToPlot*2;
           end
+          %转换为 数据集 要求的结果格式
              a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
              a=[a 0]; 
              name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '.txt'];
              fp=fopen(name,'a');
              fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
              fclose(fp);     
-        
+%              pause();
     else         %跟踪失败   使用上一次跟踪的结果，pose 和 size 
 
         %保存
@@ -251,6 +247,7 @@ for frame = 1:numel(img_files),
         disp('NaN,NaN,NaN,NaN,1');
         fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1'); 
         fclose(fp);
+%          pause();
        % disp('NaN,NaN,NaN,NaN,1');    
     end
     

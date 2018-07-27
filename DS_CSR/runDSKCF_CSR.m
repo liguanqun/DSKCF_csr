@@ -39,8 +39,8 @@ rootDestFolder=cd();
 cd(currentFolder)
 
 %now select the data folder
-rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
-%rootSourceFolder=('/home/orbbec/data');
+%rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
+rootSourceFolder=('/home/orbbec/data');
 cd(rootSourceFolder);
 rootSourceFolder=pwd()
 
@@ -52,21 +52,21 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=true;
+processAllVideos=false;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
     %insert video names manually!!!!
-    %listVideos{1}='bear_front';
+    listVideos{1}='child_no1';
     %listVideos{1}='new_ex_occ4';
-    %listVideos{2}='zcup_move_1';
-    listVideos{1}='face_occ2';    
+%     listVideos{1}='zcup_move_1';
+   %listVideos{1}='face_occ2';    
     %listVideos{1}='face_occ5';    
 else
     listVideos=listAllVideos;
 end
 
-show_visualization=false; %show the tracking results live in a matlab figure
+show_visualization=true; %show the tracking results live in a matlab figure
 
 
 %% SETTING TRACKER'S PARAMETERS
@@ -108,6 +108,7 @@ for i=1:numVideo
 listVideos{i}
   %  tmpDestFolder=generateFolderResults(rootDestFolder,listVideos{i},feature_type);
     
+ %转为matlab的坐标
 %格式 ground_truth = [x,y,w,h]
 %  target_sz = [h, w];
 %pos = [x,y] + floor(target_sz/2);

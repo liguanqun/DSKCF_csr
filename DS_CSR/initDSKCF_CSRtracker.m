@@ -27,6 +27,7 @@ tracker.cT.underOcclusion=0; % under occlusion flag
 % tracker.model_alphaDf = [];
 % tracker.model_xf = [];
 % tracker.model_xDf = [];
+tracker.channel_discr = []; 
 tracker.chann_w = []; 
 tracker.Y = [];
 tracker.H = [];

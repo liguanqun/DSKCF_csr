@@ -33,6 +33,7 @@ tracker_occ.cT.underOcclusion=0; % under occlusion flag
 % tracker_occ.model_alphaDf = [];
 % tracker_occ.model_xf = [];
 % tracker_occ.model_xDf = [];
+tracker_occ.channel_discr = []; 
 tracker_occ.chann_w = []; 
 tracker_occ.Y = [];
 tracker_occ.H = [];

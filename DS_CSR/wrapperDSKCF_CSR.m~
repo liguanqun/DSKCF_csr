@@ -157,7 +157,7 @@ for frame = 1:numel(img_files),
     %remember this particular while reading the code!!!!!
 
     [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,segmentedMASK,shape_struct]=...
-        singleFrameDSKCF(firstFrame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
+        singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
 
     
      frame =frame
@@ -231,18 +231,19 @@ for frame = 1:numel(img_files),
         sr = scale_struct.InitialDepth / scale_struct.currDepth;
         targ_sz = round(scale_struct.InitialTargetSize * sr);
         
-        %保存
+        %保存  转为opencv下的矩形
           bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
           if(resize_image)
                 bbToPlot=bbToPlot*2;
           end
+          
              a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
              a=[a 0]; 
              name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '.txt'];
              fp=fopen(name,'a');
              fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
              fclose(fp);     
-        
+             pause();
     else         %跟踪失败   使用上一次跟踪的结果，pose 和 size 
 
         %保存
@@ -251,6 +252,7 @@ for frame = 1:numel(img_files),
         disp('NaN,NaN,NaN,NaN,1');
         fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1'); 
         fclose(fp);
+         pause();
        % disp('NaN,NaN,NaN,NaN,1');    
     end
     

@@ -1,41 +1,6 @@
-function [tarBB, occBB, tarlist, id,occmask] = targetSearchDSKCF(bb,...
+function [tarBB, occBB, tarlist, id,occmask] = targetSearchDSKCF_CSR(bb,...
     tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue)
-%TARGETSEARCHDSKCF function for segmenting the occluding object
-%
-%TARGETSEARCHDSKCF.m this function segments the occluding area and find
-%meaningful target candidates. For more information about how DSKCF handles
-%occlusions see [1]. Please note that  this function was partially built
-%extending the RGBD tracker code presented in [2] and available under under
-%Open Source MIT License at
-% http://tracking.cs.princeton.edu/code.html
-%
-%
-%  INPUT:
-%  - depthIm   current depth image (16BIT)
-%  - trackerDSKCF_struct  DS-KCF tracker data structure (see INITDSKCFTRACKER)
-%
-%
-%  OUTPUT
-%  - occBB Bounding box of the occluding object in the format [topLeftX,
-%  topLeftY, bottomRightX, bottomRightY] read as [columnIndexTopLeft,
-%   rowIndexTopLeft, columnIndexBottomRight, rowIndexBottomRight]
-%
-% See also ENLARGEBB, REGIONSEGMENTSFAST, GET_SUBWINDOW, MAXRESPONSEDSKCF,
-% SINGLEFRAMEDSKCF
-%
-%
-%  [1] S. Hannuna, M. Camplani, J. Hall, M. Mirmehdi, D. Damen, T.
-%  Burghardt, A. Paiement, L. Tao, DS-KCF: A real-time tracker for RGB-D
-%  data, Journal of Real-Time Image Processing
-%
-%  [2] Shuran Song and Jianxiong Xiao. Tracking Revisited using RGBD
-%  Camera: Baseline and Benchmark. 2013.
-%
-%  University of Bristol
-%  Massimo Camplani and Sion Hannuna
-%
-%  massimo.camplani@bristol.ac.uk
-%  hannuna@compsci.bristol.ac.uk
+
 tarBB = [];
 occBB=[];
 id=[];
@@ -113,13 +78,10 @@ else
         patch = get_subwindow(im, tmpCenter(2:-1:1), scale_struct.windows_sizes(scale_struct.i).window_sz);
         patch_depth = get_subwindow(depth, tmpCenter(2:-1:1), scale_struct.windows_sizes(scale_struct.i).window_sz);
         
-        [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF...
-            ( patch,patch_depth, DSpara.features,DSpara.kernel,...
-            tmpCenter(2:-1:1),DSpara.cell_size, ...
-            scale_struct.cos_windows(scale_struct.i).cos_window,...
-            tracker.model_xf,tracker.model_alphaf,...
-            tracker.model_xDf,tracker.model_alphaDf,...
-            size(im,1),size(im,2));
+        [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF_CSR...
+            ( patch,patch_depth,tmpCenter(2:-1:1),DSpara.cell_size,scale_struct.cos_windows(scale_struct.i).cos_window,...
+           DSpara.w2c,tracker.chann_w,tracker.H,size(im,1),size(im,2));
+        
         %now maxPositionImagePlane has row index and column index so.....
         smoothFactorD=weightDistanceLogisticOnDepth(tracker.cT.meanDepthObj,...
             double(depth16Bit(maxPositionImagePlane(1),maxPositionImagePlane(2))),...

@@ -1,4 +1,4 @@
-function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,segmentedMASK,shape_struct]=...
+function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,shape_struct]=...
     singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
 
 % im=frameCurr.gray;
@@ -18,7 +18,7 @@ cScale=scale_struct.i;
 %把target结构中 关于当前目标的状态清空 在新的循环中重新赋值
 tracker=resetDSKCFtrackerInfo(tracker);
 changeOfShapeFlag=false;
-segmentedMASK=repmat(0,size(depth));
+
 
 
 %This is not the first frame we can start tracking!!!!!!!!!!
@@ -35,7 +35,7 @@ if(firstFrame==false)
 %             DSpara.features,DSpara.kernel,pos,DSpara.cell_size, scale_struct.cos_windows(cScale).cos_window,...
 %             tracker.model_xf,tracker.model_alphaf, tracker.model_xDf,tracker.model_alphaDf, tracker.pT.meanDepthObj,tracker.pT.stdDepthObj);
        
-         [response,pos]=detect_csr(patch,patch_depth, pos,DSpara.cell_size, ...
+         [response,pos,tracker.channel_discr]=detect_csr(patch,patch_depth, pos,DSpara.cell_size, ...
              scale_struct.cos_windows(cScale).cos_window,DSpara.w2c ,tracker.chann_w, tracker.H  );
 
         %update tracker struct, new position etc 更新 tracker 结构
@@ -44,9 +44,10 @@ if(firstFrame==false)
         
         tracker.cT.bb=fromCentralPointToBB (tracker.cT.posX,tracker.cT.posY, tracker.cT.w,tracker.cT.h, size(im,2),size(im,1));
         
-        tracker.cT.conf=max(response(:));%use this one, discard the weight...
+        max_response_frame =max(response(:))
+        tracker.cT.conf=max(response(:));   %use this one, discard the weight...
         
-        %segment the depth data inside the tracked region在跟踪区域分割深度图
+        %在跟踪区域分割深度图
         [p, tracker.cT.meanDepthObj,tracker.cT.stdDepthObj,estimatedDepth,estimatedSTD,...
             minIndexReduced,tracker.cT.LabelRegions,tracker.cT.Centers,tracker.cT.regionIndex,tracker.cT.LUT,regionIndexOBJ] =...
             checkOcclusionsDSKCF_noiseModel(depth16Bit,noData,tracker, tracker.cT.bb);
@@ -73,7 +74,7 @@ if(firstFrame==false)
             outOfBoundBB=enlargeBB(tracker.cT.bb ,0.05,5*size(depth16Bit));
             
             outOfBoundSize=[outOfBoundBB(4)-outOfBoundBB(2)+1,outOfBoundBB(3)-outOfBoundBB(1)+1];
-            
+            % 处理形状
             [tmpMask,insidePatchIndexes,finalMask]=extractSegmentedPatchV3(tracker.cT.LabelRegions==regionIndexOBJ,...
                 outOfBoundSize,[tracker.cT.posX,tracker.cT.posY],...
                 shape_struct,[size(depth16Bit,2),size(depth16Bit,1)]);
@@ -81,7 +82,7 @@ if(firstFrame==false)
             if(shape_struct.growingStatus==false)
                 shape_struct=addSegmentationResults(shape_struct,tmpMask,tmpBBforSeg,tmpOffset,size(depth16Bit));
             else
-                %in case region is growing....then resegment....
+                %in case region is growing....then resegment....目标在变大，重新分割
                 %segment the depth data inside the tracked region
                 %take the new bb
                 newSegmentBB=fromCentralPointToBB(tracker.cT.posX, tracker.cT.posY,shape_struct.segmentW,...
@@ -152,6 +153,7 @@ if(firstFrame==false)
                 minSizeOK= (tmpBBforSegCumulative(3)-tmpBBforSegCumulative(1)>39)...
                     ||(tmpBBforSegCumulative(4)-tmpBBforSegCumulative(2)>39);
             end
+            %检测shape是否发生较大的改变
             [tmpBBforSegCumulative,shape_struct,changeOfShapeFlag,newOutput]=regionModificationCheck...
                 (sizeOfSegmenter,sizeOfTarget, accumulatedSEGBool,noDataPercent,minSizeOK,tmpBBforSegCumulative,...
                 shape_struct,size(depth16Bit),tracker);
@@ -214,7 +216,7 @@ if(firstFrame==false)
                 %store pre-computed cosine window
                 tracker_Occ.cos_window = hann(size( tracker_Occ.yf,1)) * hann(size( tracker_Occ.yf,2))';
                 
-                [tracker_Occ]=singleFrameDSKCF_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
+                [tracker_Occ]=singleFrameDSKCF_CSR_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
                 
                 %update target size in the current object tracker
                 tracker_Occ.cT=tracker_Occ.pT;
@@ -224,7 +226,7 @@ if(firstFrame==false)
  
         
     else  %PREVIOUS FRAME UNDER OCCLUSION....上一帧处于遮挡状态     跟踪遮挡物
-        [tracker_Occ,occludedPos]=singleFrameDSKCF_occluder(0,im,depth,tracker_Occ,DSpara_Occ);
+        [tracker_Occ,occludedPos]=singleFrameDSKCF_CSR_occluder(0,im,depth,tracker_Occ,DSpara_Occ);
         
         %update occluder previous position for tracking...
         tracker_Occ.pT.posX= tracker_Occ.cT.posX;
@@ -297,7 +299,7 @@ if(firstFrame==false)
         end
         
         %search for target's candidates in the search region.....在搜索区域寻找目标的候选块
-        [tarBB, segmentedOccBB, targetList, targetIndex,occmask] = targetSearchDSKCF(bbIn, tracker, DSpara,...
+        [tarBB, segmentedOccBB, targetList, targetIndex,occmask] = targetSearchDSKCF_CSR(bbIn, tracker, DSpara,...
             im,depth,depth16Bit,scale_struct,confValue3);
         tarBBSegmented=[];
         if(isempty(segmentedOccBB)==false)
@@ -426,7 +428,7 @@ if(tracker.pT.underOcclusion==false && tracker.cT.underOcclusion==false)
 %         tracker.model_xDf,scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
 %     
      [tracker.chann_w, tracker.H]=update_csr(firstFrame,patch,patch_depth,DSpara.cell_size,DSpara.w2c,...
-         scale_struct.cos_windows(scale_struct.i).cos_window, tracker.Y,tracker.mask,...
+         scale_struct.cos_windows(scale_struct.i).cos_window, tracker.Y,tracker.H,tracker.chann_w,tracker.mask,tracker.channel_discr,...
         scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
        
     

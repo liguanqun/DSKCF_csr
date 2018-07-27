@@ -1,7 +1,8 @@
 function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,segmentedMASK,shape_struct]=...
     singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
 
-im=frameCurr.gray;
+% im=frameCurr.gray;
+im=frameCurr.rgb;
 imRGB=frameCurr.rgb;
 depth=frameCurr.depth;
 noData=frameCurr.depthNoData;
@@ -26,14 +27,17 @@ if(firstFrame==false)
     %no occlusion case 非遮挡的情况
     if ~tracker.pT.underOcclusion,
             %track the object and then check for occlusions  跟踪目标并且检查是否遮挡
-        patch = get_subwindow(im, pos, scale_struct.windows_sizes(cScale).window_sz);
+        patch = get_subwindow(imRGB, pos, scale_struct.windows_sizes(cScale).window_sz);
         patch_depth = get_subwindow(depth, pos, scale_struct.windows_sizes(cScale).window_sz);
         
         %calculate response of the DS-KCF tracker 计算DSKCF的response
-        [response, maxResponse,pos]=maxResponseDepthWeightDSKCF(patch,patch_depth,depth16Bit,...
-            DSpara.features,DSpara.kernel,pos,DSpara.cell_size, scale_struct.cos_windows(cScale).cos_window,...
-            tracker.model_xf,tracker.model_alphaf, tracker.model_xDf,tracker.model_alphaDf, tracker.pT.meanDepthObj,tracker.pT.stdDepthObj);
-        
+%         [response, maxResponse,pos]=maxResponseDepthWeightDSKCF(patch,patch_depth,depth16Bit,...
+%             DSpara.features,DSpara.kernel,pos,DSpara.cell_size, scale_struct.cos_windows(cScale).cos_window,...
+%             tracker.model_xf,tracker.model_alphaf, tracker.model_xDf,tracker.model_alphaDf, tracker.pT.meanDepthObj,tracker.pT.stdDepthObj);
+       
+         [response,pos,tracker.channel_discr]=detect_csr(patch,patch_depth, pos,DSpara.cell_size, ...
+             scale_struct.cos_windows(cScale).cos_window,DSpara.w2c ,tracker.chann_w, tracker.H  );
+
         %update tracker struct, new position etc 更新 tracker 结构
         tracker.cT.posX=pos(2);
         tracker.cT.posY=pos(1);
@@ -409,7 +413,7 @@ if(tracker.pT.underOcclusion==false && tracker.cT.underOcclusion==false)
     end
     
     %obtain a subwindow for training at newly estimated target position
-    patch = get_subwindow(im, pos, scale_struct.windows_sizes(scale_struct.i).window_sz);
+    patch = get_subwindow(imRGB, pos, scale_struct.windows_sizes(scale_struct.i).window_sz);
     patch_depth = get_subwindow(depth, pos, scale_struct.windows_sizes(scale_struct.i).window_sz);
     
     %根据尺度的变化 选择相应的目标函数
@@ -421,9 +425,9 @@ if(tracker.pT.underOcclusion==false && tracker.cT.underOcclusion==false)
 %         DSpara.lambda,tracker.model_alphaf, tracker.model_alphaDf,tracker.model_xf,...
 %         tracker.model_xDf,scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
 %     
-     [tracker.chann_w, tracker.H]=update_csr(firstFrame,patch,patch_depth,DSpara.cell_size,DSpara.w2c,..scale_struct.cos_windows(scale_struct.i).cos_window,...
-        tracker.Y,tracker.mask,...
-      scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
+     [tracker.chann_w, tracker.H]=update_csr(firstFrame,patch,patch_depth,DSpara.cell_size,DSpara.w2c,...
+         scale_struct.cos_windows(scale_struct.i).cos_window, tracker.Y,tracker.H,tracker.chann_w,tracker.mask,tracker.channel_discr,...
+        scale_struct.updated,DSpara.interp_factor+additionalShapeInterpolation);
        
     
     

@@ -1,4 +1,4 @@
-function [response,pos]=detect_csr(patch,patch_depth,pos,cell_size, cos_window,w2c,...
+function [response,pos,channel_discr]=detect_csr(patch,patch_depth,pos,cell_size, cos_window,w2c,...
                                             chann_w, H )
 
    f = get_DSKCF_CSR_feature(patch, patch_depth, cell_size,cos_window, w2c);
@@ -42,8 +42,8 @@ function [response,pos]=detect_csr(patch,patch_depth,pos,cell_size, cos_window,w
     end
 
     % displacement
-    d = cell_size * [col - 1, row - 1];
-    
+%     d = cell_size * [col - 1, row - 1];   
+     d = cell_size * [row - 1, col - 1];
     % new object center
     pos = pos + d;
 
