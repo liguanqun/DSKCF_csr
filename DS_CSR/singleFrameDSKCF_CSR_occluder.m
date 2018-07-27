@@ -41,8 +41,8 @@ patch_depth = get_subwindow(depth, newPos, tracker_Occ.window_sz);
 % tracker_Occ.model_xf, tracker_Occ.model_xDf,0,DSpara.interp_factor);
 
      [tracker_Occ.chann_w, tracker_Occ.H]=update_csr(firstFrame,patch,patch_depth,DSpara.cell_size,DSpara.w2c,...
-         tracker_Occ.cos_window, tracker_Occ.yf,tracker_Occ.H,tracker_Occ.chann_w,tracker_Occ.mask,tracker_Occ.channel_discr,...
-        0,DSpara.interp_factor);
+         tracker_Occ.cos_window, tracker_Occ.yf,tracker_Occ.H,tracker_Occ.chann_w,tracker_Occ.channel_discr,...
+        0,DSpara.interp_factor,tracker_Occ.mask);
        
 
 

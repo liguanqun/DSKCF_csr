@@ -10,6 +10,7 @@ tracker.cT.h=0;%height of the target
 tracker.cT.w=0;%width in the image planeof the target
 tracker.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
 tracker.cT.conf=0;
+tracker.cT.conf_init=0;
 %% 当前目标的深度分布current target depth distribution info
 tracker.cT.meanDepthObj=0;% mean depth of the tracker object
 tracker.cT.stdDepthObj=0;% depth's standard deviation of the tracker object

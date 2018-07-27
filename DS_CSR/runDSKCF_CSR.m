@@ -1,4 +1,3 @@
-
 clc
 clear all
 currentFolder=pwd();
@@ -39,8 +38,8 @@ rootDestFolder=cd();
 cd(currentFolder)
 
 %now select the data folder
-%rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
-rootSourceFolder=('/home/orbbec/data');
+rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
+% rootSourceFolder=('/home/orbbec/data');
 cd(rootSourceFolder);
 rootSourceFolder=pwd()
 
@@ -57,7 +56,7 @@ processAllVideos=false;
 %eventually select your subset of videos
 if(processAllVideos==false)
     %insert video names manually!!!!
-    listVideos{1}='child_no1';
+    listVideos{1}='cc_occ1';
     %listVideos{1}='new_ex_occ4';
 %     listVideos{1}='zcup_move_1';
    %listVideos{1}='face_occ2';    

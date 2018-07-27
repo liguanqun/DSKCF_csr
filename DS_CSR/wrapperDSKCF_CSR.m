@@ -15,9 +15,6 @@ DSpara.window_sz = floor(target_sz * (1 + DSpara.padding));
 %初始化 尺度数据结构，包括 回归目标函数 cos 窗函数 目标大小等  scales = 0.4:0.1:2.2;
 scale_struct=initDSKCFparam(DSpara,target_sz,pos);
 
-%initialize shape struct
-shape_struct=initDSKCFshape(5,0);
-
 %检查尺度DSKCF的参数结构体是否正确的初始化
 if(isempty(scale_struct))
     disp('Scale structure initialization failed, tracking aborted');
@@ -145,8 +142,10 @@ for frame = 1:numel(img_files),
             
             myFigColor=figure();
             myFigDepth=figure();
+            myFigMask=figure();
             set(myFigDepth,'resize','off');
             set(myFigColor,'resize','off');
+            set(myFigMask,'resize','off');
         end
         
         %take segmentation results for the first frame
@@ -156,8 +155,8 @@ for frame = 1:numel(img_files),
     %DS-KCF tracker code need as input the position expressed as [y x],
     %remember this particular while reading the code!!!!!
 
-    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
-        singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
+    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ]=...
+        singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ);
 
     
      frame =frame
@@ -201,12 +200,16 @@ for frame = 1:numel(img_files),
         if(frame==1)
             manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
             manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%              pause()
+            figure(myFigMask)
+            imshow(tracker.mask*255);
+%             pause()
         else
-            clf(myFigColor);
+            %clf(myFigColor);
             manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);       
-            clf(myFigDepth);
+            %clf(myFigDepth);
             manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+            figure(myFigMask)
+            imshow(tracker.mask*255);
             drawnow
 %              pause()
         end
@@ -233,7 +236,7 @@ for frame = 1:numel(img_files),
           end
           %转换为 数据集 要求的结果格式
              a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
-             a=[a 0]; 
+             a=[a 0]
              name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '.txt'];
              fp=fopen(name,'a');
              fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换

@@ -10,6 +10,7 @@ tracker_occ.cT.h=0;%height of the target
 tracker_occ.cT.w=0;%width in the image planeof the target
 tracker_occ.cT.bb=[0 0 0 0]; % in the format [topLeftX, topLeftY, bottomRightX, bottomRightY]
 tracker_occ.cT.conf=0;
+tracker_occ.cT.conf_init=0;
 %% 尺度信息，直接赋值，不需要尺度结构
 tracker_occ.window_sz=[];
 tracker_occ.output_sigma=[];

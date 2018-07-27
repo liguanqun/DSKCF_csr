@@ -1,5 +1,5 @@
 function [ chann_w,model_H ] = update_csr( firstFrame,patch,patch_depth,cell_size,w2c,...
-    cos_window,Y, model_H_in,chann_w_in,mask ,channel_discr,scaleUpdate,interp_factor)
+    cos_window,Y, model_H_in,chann_w_in,channel_discr,scaleUpdate,interp_factor,mask)
 
     f = get_DSKCF_CSR_feature(patch, patch_depth, cell_size,cos_window, w2c);
   
@@ -10,7 +10,7 @@ function [ chann_w,model_H ] = update_csr( firstFrame,patch,patch_depth,cell_siz
          mask_rescale =ones(obj_size);
     else
           obj_size = floor([size(mask, 1) size(mask, 2)] ./ cell_size);   
-    mask_rescale =zeros(obj_size);
+          mask_rescale =zeros(obj_size);
      
     for i=1:obj_size(1)
         
