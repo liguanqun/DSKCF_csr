@@ -17,7 +17,7 @@ if(firstFrame==false)
 %         tracker_Occ.model_xf,tracker_Occ.model_alphaf, tracker_Occ.model_xDf,tracker_Occ.model_alphaDf,...
 %         nRows,nCols);
                  [response,newPos,tracker_Occ.channel_discr]=detect_csr(patch,patch_depth, pos,DSpara.cell_size, ...
-              tracker_Occ.yf,DSpara.w2c ,tracker_Occ.chann_w, tracker_Occ.H  );
+              tracker_Occ.yf,DSpara.w2c ,tracker_Occ.chann_w, tracker_Occ.H, tracker_Occ.use_channel_wl );
 
     %update tracker struct, new position etc
     tracker_Occ.cT.posX=newPos(2);
@@ -40,9 +40,8 @@ patch_depth = get_subwindow(depth, newPos, tracker_Occ.window_sz);
 %     DSpara.kernel,tracker_Occ.yf,DSpara.lambda,tracker_Occ.model_alphaf,tracker_Occ.model_alphaDf,...
 % tracker_Occ.model_xf, tracker_Occ.model_xDf,0,DSpara.interp_factor);
 
-     [tracker_Occ.chann_w, tracker_Occ.H]=update_csr(firstFrame,patch,patch_depth,DSpara.cell_size,DSpara.w2c,...
+     [tracker_Occ.chann_w, tracker_Occ.H,response_init]=update_csr(firstFrame,tracker_Occ.use_channel_wl,patch,patch_depth,DSpara.cell_size,DSpara.w2c,...
          tracker_Occ.cos_window, tracker_Occ.yf,tracker_Occ.H,tracker_Occ.chann_w,tracker_Occ.mask,tracker_Occ.channel_discr,...
         0,DSpara.interp_factor);
-       
 
 

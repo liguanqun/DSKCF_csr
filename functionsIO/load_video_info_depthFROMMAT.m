@@ -1,4 +1,4 @@
-function [img_files, depth_files, pos, target_sz, ground_truth, video_path, depth_path] = load_video_info_depthFROMMAT(base_path, video)
+function [img_files, depth_files, pos, target_sz, init_rect, ground_truth,video_path, depth_path] = load_video_info_depthFROMMAT(base_path, video)
 % LOAD_VIDEO_INFO_DEPTHFROMMAT.m is a automatically generates the relevant information for the video in the given path
 %
 %   LOAD_VIDEO_INFO_DEPTHFROMMAT loads all the relevant information for the
@@ -58,31 +58,59 @@ assert(f ~= -1, ['No initial position or ground truth to load ("' filename '").'
 
 %the format is [x, y, width, height]
 try
-    ground_truth = textscan(f, '%f,%f,%f,%f', 'ReturnOnError',false);
+    init_rect = textscan(f, '%f,%f,%f,%f', 'ReturnOnError',false);
 catch  %#ok, try different format (no commas)
     frewind(f);
-    ground_truth = textscan(f, '%f %f %f %f');
+    init_rect = textscan(f, '%f %f %f %f');
 end
-ground_truth = cat(2, ground_truth{:});
+init_rect = cat(2, init_rect{:});
 fclose(f);
 
 
-
 %set initial position and size
-target_sz = [ground_truth(1,4), ground_truth(1,3)];
-pos = [ground_truth(1,2), ground_truth(1,1)] + floor(target_sz/2);
+target_sz = [init_rect(1,4), init_rect(1,3)];
+pos = [init_rect(1,2), init_rect(1,1)] + floor(target_sz/2);
 
-if size(ground_truth,1) == 1,
+if size(init_rect,1) == 1,
     %we have ground truth for the first frame only (initial position)
-    ground_truth = [];
+    init_rect = [];
 else
     %store positions instead of boxes
-    ground_truth = ground_truth(:,[2,1]) + ground_truth(:,[4,3]) / 2;
+    init_rect = init_rect(:,[2,1]) + init_rect(:,[4,3]) / 2;
 end
 % 读 frames.mat  or frames.json
  load([video_path 'frames'])
 
 numOfFrames = frames.length;
+
+ground_truth_file_name =  [video_path video '.txt'];
+
+f = fopen(ground_truth_file_name);
+
+if f ==-1
+    disp('there is no groundtruth ');
+    ground_truth =[];
+else
+    i=1;
+    disp('there is  groundtruth ');
+    ground_truth = zeros(numOfFrames,5);
+    while ~feof(f)
+        tline=fgetl(f);
+        if double(tline(1)>=48&&tline(1)<=57)
+            ground_truth(i,:)=str2num(tline);
+            
+        else
+             ground_truth(i,:)=[0,0,0,0,i];
+        end
+      i =i+1;
+    end
+     i=i-1;
+      if numOfFrames ~= i
+          num =min(i,numOfFrames);
+        ground_truth = ground_truth(1:num,:);
+        numOfFrames =num;      
+      end
+end
 
 %from now on, work in the subfolder where all the images are
 

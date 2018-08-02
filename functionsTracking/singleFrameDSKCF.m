@@ -1,5 +1,5 @@
-function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,segmentedMASK,shape_struct]=...
-    singleFrameDSKCF(firstFrame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
+function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,segmentedMASK,shape_struct,mask]=...
+    singleFrameDSKCF(firstFrame,frame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
 
 im=frameCurr.gray;
 imRGB=frameCurr.rgb;
@@ -18,7 +18,7 @@ cScale=scale_struct.i;
 tracker=resetDSKCFtrackerInfo(tracker);
 changeOfShapeFlag=false;
 segmentedMASK=repmat(0,size(depth));
-
+mask =[];
 
 %This is not the first frame we can start tracking!!!!!!!!!!
 if(firstFrame==false)
@@ -39,14 +39,19 @@ if(firstFrame==false)
         tracker.cT.posY=pos(1);
         
         tracker.cT.bb=fromCentralPointToBB (tracker.cT.posX,tracker.cT.posY, tracker.cT.w,tracker.cT.h, size(im,2),size(im,1));
-        
+
         tracker.cT.conf=max(response(:));%use this one, discard the weight...
         
+         if(frame>102)
+            disp('into err');
+        end       
         %segment the depth data inside the tracked region在跟踪区域分割深度图
         [p, tracker.cT.meanDepthObj,tracker.cT.stdDepthObj,estimatedDepth,estimatedSTD,...
             minIndexReduced,tracker.cT.LabelRegions,tracker.cT.Centers,tracker.cT.regionIndex,tracker.cT.LUT,regionIndexOBJ] =...
-            checkOcclusionsDSKCF_noiseModel(depth16Bit,noData,tracker, tracker.cT.bb);
+            checkOcclusionsDSKCF_noiseModel(depth16Bit,noData,tracker, tracker.cT.bb);   
         
+        disp([' dect response ' num2str(max(response(:))) '  p = ' num2str(p*100)]);
+        disp(['depth target mean  and std ' num2str(tracker.cT.meanDepthObj,'%.4f') '    ' num2str(tracker.cT.stdDepthObj,'%.4f')  ]);
 
         %  如果分割的目标在前景中，使用当前的bounding box 否则的话使用深度图目标分割提供的
         if(regionIndexOBJ==0 )
@@ -157,6 +162,10 @@ if(firstFrame==false)
             end
             
         end
+          mask =tracker.cT.LabelRegions;
+          mask(mask ~= tracker.cT.regionIndex)=0;
+          mask(mask==tracker.cT.regionIndex)=1;
+          mask= put_mask_into_fullImage(pos,im,mask);
         %occlusion condition  遮挡条件 
         tracker.cT.underOcclusion = abs(p)>0.35 && tracker.cT.conf<confInterval1;
         
@@ -172,6 +181,7 @@ if(firstFrame==false)
         %当前处于遮挡，分割出遮挡物体，并且初始化 这遮挡物额跟踪器
         if tracker.cT.underOcclusion,
             % initialize occlusion
+             disp(' occ occ occ occ cc');
             [tmpOccBB] = occludingObjectSegDSKCF(depth16Bit,tracker);
             
             if (isempty(tmpOccBB) | isnan(tmpOccBB) )
@@ -357,7 +367,7 @@ if(firstFrame==false)
             [p, TMpTDepth,TMpTStd,TMPLabelRegions,TMPCenters,...
                 TMPregionIndex,TMPLUT,secondPlaneDepth,secondPlaneDepthStd] ...
                 = checkOcclusionsDSKCF_secondPlane(depth16Bit,noData,tracker, tracker.cT.bb);
-            
+              disp(['finish conf is ' num2str(tracker.cT.conf ) '   p =='  num2str(p)]);
             if tracker.cT.conf > confInterval1/2 && p<0.35,
                 tracker.cT.underOcclusion =0;
                 tracker.cT.segmentedBB = tarBBSegmented';
@@ -365,8 +375,9 @@ if(firstFrame==false)
             
             if ~tracker.cT.underOcclusion,
                 tmpWeight = max(0,min(1,tracker.cT.conf));
-                
+                    disp('occ recovery!!!!!!!!!!!');
             else
+                disp('still occ !!!!!!!!!!!');
                 tmpWeight = 0;
             end
             

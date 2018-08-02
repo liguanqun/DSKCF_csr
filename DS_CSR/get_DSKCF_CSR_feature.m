@@ -4,13 +4,11 @@ function [ out ] = get_DSKCF_CSR_feature(patch, patch_depth, cell_size,cos_windo
 nHogChan = 18;
 
 %                        path_hog   + path_hog  + gray   +   cn
- num_feat_ch =   nHogChan + nHogChan +   1     +  size(w2c,2);   
+ num_feat_ch =   nHogChan  +   1     +  size(w2c,2);   
  
  
-out_size = floor([size(patch, 1) size(patch, 2)] ./ cell_size);
+out_size = floor([size(patch, 1)/ cell_size  size(patch, 2)/ cell_size ] );
 out = zeros(out_size(1), out_size(2), num_feat_ch);
-
-
 
 channel_id = 1;
     %% extract HoG features
@@ -20,10 +18,10 @@ channel_id = 1;
     out(:,:,channel_id:(channel_id + nHogChan - 1)) = hog_image(:,:,1:nHogChan);
     channel_id = channel_id + nHogChan;
 
-  	hog_depth = fhog(single(patch_depth), cell_size, nOrients);
-    % put HoG features into output structure
-    out(:,:,channel_id:(channel_id + nHogChan - 1)) = hog_depth(:,:,1:nHogChan);
-    channel_id = channel_id + nHogChan;  
+%   	hog_depth = fhog(single(patch_depth), cell_size, nOrients);
+%     % put HoG features into output structure
+%     out(:,:,channel_id:(channel_id + nHogChan - 1)) = hog_depth(:,:,1:nHogChan);
+%     channel_id = channel_id + nHogChan;  
     
   %%  prepare grayscale patch
 	if size(patch,3) > 1

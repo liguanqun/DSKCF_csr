@@ -32,7 +32,8 @@ tracker.chann_w = [];
 tracker.Y = [];
 tracker.H = [];
 tracker.mask = [];
-
+tracker.use_channel_wl = true;
+tracker.conf_init = [];
 %previous target entries
 tracker.pT=tracker.cT;
 

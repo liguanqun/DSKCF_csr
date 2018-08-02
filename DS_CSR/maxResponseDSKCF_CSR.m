@@ -4,10 +4,14 @@ function [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF_CSR.
 
   f = get_DSKCF_CSR_feature(patch, patch_depth, cell_size,cos_window, w2c);
 
-  response = real(ifft2(fft2(f).*conj(H)));
-
-maxResponse=max(response(:));
-[vert_delta, horiz_delta] = find(response == maxResponse, 1);
+%   response = real(ifft2(fft2(f).*conj(H)));
+    response_chann = real(ifft2(fft2(f).*conj(H)));
+    response = sum(bsxfun(@times, response_chann, reshape(chann_w, 1, 1, size(response_chann,3))), 3);
+       
+    response_chann_sum = real(ifft2(sum(fft2(f).*conj(H), 3)));
+    maxResponse=max(response_chann_sum(:));
+Max_ =max(response(:));
+[vert_delta, horiz_delta] = find(response == Max_, 1);
 if vert_delta > size(response,1) / 2,  %wrap around to negative half-space of vertical axis
     vert_delta = vert_delta - size(response,1);
 end

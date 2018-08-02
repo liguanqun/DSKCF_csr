@@ -113,6 +113,10 @@ end
 
 [peakDepth,posPeak]=findpeaks([0; H ;0],'MINPEAKDISTANCE',minPeakDistParam,'MINPEAKHEIGHT',0.005*maxValue);
 
+%不允许只选出一个 peak 极大值会影响 target的 方差，添加一个最远的距离作为peak
+if length(posPeak) ==1 && length(I)>50
+    posPeak = [posPeak length(H)];
+end
 % Initialize cluster centroids
 if numel(c)>1
     C=c;

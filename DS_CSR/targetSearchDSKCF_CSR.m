@@ -1,5 +1,5 @@
 function [tarBB, occBB, tarlist, id,occmask] = targetSearchDSKCF_CSR(bb,...
-    tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue)
+    tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue,conf_init)
 
 tarBB = [];
 occBB=[];
@@ -81,15 +81,16 @@ else
         [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF_CSR...
             ( patch,patch_depth,tmpCenter(2:-1:1),DSpara.cell_size,scale_struct.cos_windows(scale_struct.i).cos_window,...
            DSpara.w2c,tracker.chann_w,tracker.H,size(im,1),size(im,2));
-        
-        %now maxPositionImagePlane has row index and column index so.....
+      
+          maxResponse =maxResponse /conf_init;
+
+       %now maxPositionImagePlane has row index and column index so.....
         smoothFactorD=weightDistanceLogisticOnDepth(tracker.cT.meanDepthObj,...
             double(depth16Bit(maxPositionImagePlane(1),maxPositionImagePlane(2))),...
             tracker.cT.stdDepthObj);
         smoothFactorD_vector=[smoothFactorD_vector,smoothFactorD];
-        
         conf=maxResponse*smoothFactorD;
-        
+        disp(['search response ' num2str(maxResponse) '    weight  ' num2str(conf)])
         reEstimatedBB(1:2)=maxPositionImagePlane(2:-1:1) - [tmpWidthTarget,tmpHeightTarget]/2;
         reEstimatedBB(3:4)=maxPositionImagePlane(2:-1:1) + [tmpWidthTarget,tmpHeightTarget]/2;
         

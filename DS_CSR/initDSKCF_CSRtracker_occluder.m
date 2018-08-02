@@ -38,7 +38,7 @@ tracker_occ.chann_w = [];
 tracker_occ.Y = [];
 tracker_occ.H = [];
 tracker_occ.mask = [];
-
+tracker_occ.use_channel_wl = false;
 %previous target entries
 tracker_occ.pT=tracker_occ.cT;
 

@@ -37,10 +37,10 @@ rootDestFolder=cd();
 cd(currentFolder)
 
 %now select the data folder
-rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet/');
-%rootSourceFolder=('/home/orbbec/data');
+%rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet/');
+rootSourceFolder=('/home/orbbec/data');
 cd(rootSourceFolder);
-rootSourceFolder=pwd()
+rootSourceFolder=pwd();
 
 
 %select all the videos in the folder
@@ -55,16 +55,16 @@ processAllVideos=true;
 %eventually select your subset of videos
 if(processAllVideos==false)
     %insert video names manually!!!!
-    listVideos{1}='bear_front';
-    %listVideos{1}='new_ex_occ4';
+     listVideos{1}='bear_front';
+%     listVideos{1}='new_ex_occ4';
     %listVideos{2}='zcup_move_1';
    % listVideos{1}='child_no1';    
-    %listVideos{1}='face_occ5';    
+%      listVideos{1}='face_occ5';    
 else
     listVideos=listAllVideos;
 end
 
-show_visualization=false; %show the tracking results live in a matlab figure
+show_visualization=true ; %show the tracking results live in a matlab figure
 
 
 %% SETTING TRACKER'S PARAMETERS
@@ -139,13 +139,13 @@ listVideos{i}
 %格式 ground_truth = [x,y,w,h]
 %  target_sz = [h, w];
 %pos = [x,y] + floor(target_sz/2);
-        [img_files, depth_files, pos, target_sz, ground_truth, video_path, depth_path] = ...
+        [img_files, depth_files, pos, target_sz,init_rect, ground_truth, video_path, depth_path] = ...
             load_video_info_depthFROMMAT(rootSourceFolder, listVideos{i});
     
     
     %call tracker wrapper function with all the relevant parameters
     [dsKCFoutput] =   wrapperDSKCF(video_path, depth_path,img_files, depth_files, pos, ...
-        target_sz, DSpara,show_visualization,listVideos{i} );
+        target_sz,ground_truth, DSpara,show_visualization,listVideos{i} );
    
 
 

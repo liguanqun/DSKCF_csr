@@ -1,13 +1,13 @@
 function [dsKCFoutput] =  wrapperDSKCF_CSR(video_path, depth_path, img_files, depth_files,...
-                                        pos, target_sz,DSpara, show_visualization,video)
+    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video)
 
-     resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
+resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
 if resize_image,
     pos = floor(pos / 2);
     target_sz = floor(target_sz / 2);
 end
-  
+
 
 %搜索窗口的尺寸，把padding算上
 DSpara.window_sz = floor(target_sz * (1 + DSpara.padding));
@@ -25,7 +25,7 @@ if(isempty(scale_struct))
     return;
 end
 
- dsKCFoutput=[];
+dsKCFoutput=zeros(size(video_path,1),5);
 
 frameCurr=[];
 %     frameCurr.rgb   = imRGB;
@@ -38,7 +38,8 @@ framePrev=[]; %
 
 
 %%FRAME BY FRAME TRACKING.....
-for frame = 1:numel(img_files),
+ for frame = 1:numel(img_files),
+
     %load images
     im = imread([video_path img_files{frame}]);
     depth = imread([depth_path depth_files{frame}]);
@@ -47,7 +48,7 @@ for frame = 1:numel(img_files),
     if(isa(depth,'uint16'))
         
         depth = bitor(bitshift(depth,-3), bitshift(depth,16-3));
-    
+        
         %depth data in mm
         depth16Bit = depth;
         
@@ -89,7 +90,7 @@ for frame = 1:numel(img_files),
     frameCurr.depth = double(depth);
     frameCurr.depthNoData=depth16Bit==0;%代表 Mask 深度值为0处的值为1 否则为0
     frameCurr.depth16Bit=depth16Bit;
-   
+    
     %for the first frame initialize the structures
     %第一张图像 用来初始化
     if(firstFrame)
@@ -112,7 +113,7 @@ for frame = 1:numel(img_files),
         tracker.pT.posY=pos(1);
         tracker.pT.h=scale_struct.target_sz(scale_struct.i).target_sz(1);
         tracker.pT.w=scale_struct.target_sz(scale_struct.i).target_sz(2);
-      %目标的矩形框 [x,y,x+w,y+h]
+        %目标的矩形框 [x,y,x+w,y+h]
         tracker.pT.bb=fromCentralPointToBB(tracker.pT.posX,tracker.pT.posY, tracker.pT.w,tracker.pT.h,size(im,2),size(im,1));
         tracker.cT.meanDepthObj=0;% mean depth of the tracker object
         %initialize depth distributions 初始化深度的分布
@@ -123,8 +124,9 @@ for frame = 1:numel(img_files),
         % mask init
         mask =tracker.pT.LabelRegions;
         mask(mask ~= tracker.pT.regionIndex)=0;
-         mask(mask==tracker.pT.regionIndex)=1;
-         tracker.mask =mask;
+        mask(mask==tracker.pT.regionIndex)=1;
+        mask= put_mask_into_fullImage(pos,im,mask);
+        tracker.mask =mask;
         %for the first frame copy everything also in the current target
         %第一张图像 当前图像和前一张图像的参数相同
         tracker.cT=tracker.pT;
@@ -142,25 +144,26 @@ for frame = 1:numel(img_files),
         
         %figure initialization
         if(show_visualization)
-            
             myFigColor=figure();
-            myFigDepth=figure();
-            set(myFigDepth,'resize','off');
+%             myFigDepth=figure();
+             myFigMask=figure();
+%             set(myFigDepth,'resize','off');
             set(myFigColor,'resize','off');
+            set(myFigMask,'resize','off');
         end
         
         %take segmentation results for the first frame
         tracker.cT.segmentedBB=tracker.cT.bb';
     end %    if(firstFrame)
-
+    
     %DS-KCF tracker code need as input the position expressed as [y x],
     %remember this particular while reading the code!!!!!
-
-    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
-        singleFrameDSKCF_CSR(firstFrame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
-
     
-     frame =frame
+    [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
+        singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
+    
+    
+    frame =frame
     
     %% Just visualize......
     if ( show_visualization==true)
@@ -174,10 +177,10 @@ for frame = 1:numel(img_files),
         %empty tracking, so mark this frame
         if(isempty(pos))
             bbToPlot=[];
-        else      
+        else
             %use the Sr scale factor (see [1] for more details)
             sr = scale_struct.InitialDepth / scale_struct.currDepth;
-            targ_sz = round(scale_struct.InitialTargetSize * sr);         
+            targ_sz = round(scale_struct.InitialTargetSize * sr);
             %calculate the corresponding bounding box for Plotting!!!!
             %in this case we need [topLeftX, topLeftY,W,H]
             bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
@@ -199,67 +202,87 @@ for frame = 1:numel(img_files),
         
         
         if(frame==1)
-            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%              pause()
+            if isempty(ground_truth)
+                manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
+%                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                 figure(myFigMask)
+                 imshow(tracker.mask*255);
+                
+            else
+                show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
+%                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                 figure(myFigMask)
+                 imshow(tracker.mask*255);
+            end
         else
-            clf(myFigColor);
-            manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);       
-            clf(myFigDepth);
-            manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-            drawnow
-%              pause()
+            if isempty(ground_truth)
+                clf(myFigColor);
+                manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
+%                 clf(myFigDepth);
+%                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                 figure(myFigMask)
+                 imshow(tracker.mask*255);
+                drawnow
+            else
+                clf(myFigColor);
+                show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
+%                 clf(myFigDepth);
+%                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                 figure(myFigMask)
+                 imshow(tracker.mask*255);
+                drawnow
+                
+            end
         end
-           
-    end
-    %% Visualize and save.....
-
-    %% just save images
-%%   把跟踪的pos保存下来
-    %now generate the results, starting from the tracker output!!!
-    % the object has being tracked....
-   
-    if(isempty(pos)==false)   %跟踪成功
-        %accumulate the position of the DS-KCF tracker remember format [y x]
-
-        %use the Sr scale factor (see [1] for more details) sr连续尺度系数 保存尺度的大小，即 目标的size
-        sr = scale_struct.InitialDepth / scale_struct.currDepth;
-        targ_sz = round(scale_struct.InitialTargetSize * sr);
         
-        %保存  转为opencv下的矩形
-          bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
-          if(resize_image)
-                bbToPlot=bbToPlot*2;
-          end
-          %转换为 数据集 要求的结果格式
-             a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
-             a=[a 0]; 
-             name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '.txt'];
-             fp=fopen(name,'a');
-             fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
-             fclose(fp);     
-%              pause();
-    else         %跟踪失败   使用上一次跟踪的结果，pose 和 size 
-
-        %保存
-        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '.txt'];
-        fp=fopen(name,'a');       
-        disp('NaN,NaN,NaN,NaN,1');
-        fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1'); 
-        fclose(fp);
-%          pause();
-       % disp('NaN,NaN,NaN,NaN,1');    
     end
     
+    
+    %% just save images
+    %%   把跟踪的pos保存下来
+    %now generate the results, starting from the tracker output!!!
+    % the object has being tracked....
+    if save_result_into_txt
+        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/testall3/' video '.txt'];
+        if(tracker.cT.underOcclusion==false)   %跟踪成功
+            %accumulate the position of the DS-KCF tracker remember format [y x]
+            
+            %use the Sr scale factor (see [1] for more details) sr连续尺度系数 保存尺度的大小，即 目标的size
+            sr = scale_struct.InitialDepth / scale_struct.currDepth;
+            targ_sz = round(scale_struct.InitialTargetSize * sr);
+            
+            %保存  转为opencv下的矩形
+            bbToPlot = [pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])];
+            if(resize_image)
+                bbToPlot=bbToPlot*2;
+            end
+            %
+            dsKCFoutput(frame,:) =[bbToPlot([1:4]),frame];
+                     a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);%转换为 数据集 要求的结果格式
+                     a=[a 0];
+%              a=floor([ bbToPlot([1:4])  frame]);%  for c++
+            
+            fp=fopen(name,'a');
+            fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
+            fclose(fp);
+        else         %跟踪失败
+            %保存
+            dsKCFoutput(frame,:) =[0,0,0,0,frame];
+            fp=fopen(name,'a');
+            disp('NaN,NaN,NaN,NaN,1');
+%              fprintf(fp,'%s%d\r\n','0,0,0,0,',frame);  % for c++
+          fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1'); % 转换为 数据集 要求的结果格式
+            fclose(fp);
+            
+            % disp('NaN,NaN,NaN,NaN,1');
+        end
+    end
+
+%       pause();
     %更新以往的数据结构，把当前的Target赋值给以往的Target
     if(frame>1)
         %previous target entries
         tracker.pT=tracker.cT;
     end
-    
-    
 end
-
-
-
 end

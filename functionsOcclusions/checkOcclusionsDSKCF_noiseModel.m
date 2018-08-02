@@ -115,7 +115,8 @@ tmpProp=regionprops(LabelReg,'Area');
 areaList= cat(1, tmpProp.Area);
 widthTarget=bbIn(4)-bbIn(2);
 heightTarget=bbIn(3)-bbIn(1);
-minArea=widthTarget*heightTarget*0.09;
+%  minArea=widthTarget*heightTarget*0.09;
+minArea=widthTarget*heightTarget*0.1;%lgq 20180731
 
 areaSmallIndex=areaList<minArea;
 if(sum(areaSmallIndex)==length(areaList))

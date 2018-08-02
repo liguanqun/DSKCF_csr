@@ -66,6 +66,11 @@ Imax=double(max(newPointSet));
 
 %calculate the histograms
 I=(Imin:histStep:Imax)';
+if(size(I,1)<5)
+     histStep =histStep/2;%bug from face_occ2 size(I,1) ==4
+  I=(Imin:histStep:Imax)';    
+    
+end
 if(I(end)~=Imax)
     I(end+1)=Imax+histStep;
 end

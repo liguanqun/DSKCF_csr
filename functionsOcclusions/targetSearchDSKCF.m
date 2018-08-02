@@ -127,7 +127,7 @@ else
         smoothFactorD_vector=[smoothFactorD_vector,smoothFactorD];
         
         conf=maxResponse*smoothFactorD;
-        
+         disp(['search response ' num2str(maxResponse) '    weight  ' num2str(conf)])
         reEstimatedBB(1:2)=maxPositionImagePlane(2:-1:1) - [tmpWidthTarget,tmpHeightTarget]/2;
         reEstimatedBB(3:4)=maxPositionImagePlane(2:-1:1) + [tmpWidthTarget,tmpHeightTarget]/2;
         
