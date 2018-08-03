@@ -121,6 +121,8 @@ framePrev=[]; %
             tracker.pT.regionIndex,tracker.pT.Centers, tracker.pT.LUT] = ...
             initDistributionFast(tracker.pT.bb,framePrev.depth16Bit,framePrev.depthNoData);
         
+        disp(['depth target mean  and std ' num2str(tracker.pT.meanDepthObj,'%.4f') '    ' num2str(tracker.pT.stdDepthObj,'%.4f')  ]);
+
         % mask init
         mask =tracker.pT.LabelRegions;
         mask(mask ~= tracker.pT.regionIndex)=0;
@@ -158,12 +160,13 @@ framePrev=[]; %
     
     %DS-KCF tracker code need as input the position expressed as [y x],
     %remember this particular while reading the code!!!!!
-    
+     frame =frame
+     
     [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
         singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
     
     
-    frame =frame
+   
     
     %% Just visualize......
     if ( show_visualization==true)
@@ -243,7 +246,7 @@ framePrev=[]; %
     %now generate the results, starting from the tracker output!!!
     % the object has being tracked....
     if save_result_into_txt
-        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/testall3/' video '.txt'];
+        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/testall4/' video '.txt'];
         if(tracker.cT.underOcclusion==false)   %跟踪成功
             %accumulate the position of the DS-KCF tracker remember format [y x]
             
@@ -278,7 +281,7 @@ framePrev=[]; %
         end
     end
 
-%       pause();
+%         pause();
     %更新以往的数据结构，把当前的Target赋值给以往的Target
     if(frame>1)
         %previous target entries

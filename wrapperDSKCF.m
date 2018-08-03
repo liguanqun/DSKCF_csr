@@ -1,5 +1,5 @@
 function [dsKCFoutput] =  wrapperDSKCF(video_path, depth_path, img_files, depth_files, pos, target_sz,ground_truth, ...
-    DSpara, show_visualization,video)
+    DSpara, show_visualization,save_result_to_txt,video)
 
 resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
@@ -143,11 +143,11 @@ for frame = 1:numel(img_files),
         if(show_visualization)
             
             myFigColor=figure();
-%             myFigDepth=figure();
-%             myFigMask=figure();
-%             set(myFigDepth,'resize','off');
+            %             myFigDepth=figure();
+                         myFigMask=figure();
+            %             set(myFigDepth,'resize','off');
             set(myFigColor,'resize','off');
-%             set(myFigMask,'resize','off');
+                         set(myFigMask,'resize','off');
         end
         
         %take segmentation results for the first frame
@@ -224,39 +224,39 @@ for frame = 1:numel(img_files),
         if(frame==1)
             if isempty(ground_truth)
                 manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                  manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%                 figure(myFigMask)
-%                 imshow(mask*255);
-
+                %                  manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                                 figure(myFigMask)
+                                 imshow(mask*255);
+                
                 
             else
                 show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%                 figure(myFigMask)
-%                 imshow(mask*255);
-
+                %                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                                 figure(myFigMask)
+                                imshow(mask*255);
+                
                 
             end
         else
             if isempty(ground_truth)
                 clf(myFigColor);
                 manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                 clf(myFigDepth);
-%                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%                 figure(myFigMask)
-%                 imshow(mask_update*255);
-%                 drawnow
-
+                %                 clf(myFigDepth);
+                %                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                                 figure(myFigMask)
+                                 imshow(mask_update*255);
+                                 drawnow
+                
                 
             else
                 clf(myFigColor);
                 show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                clf(myFigDepth);
-%                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-%                 figure(myFigMask)
-%                 imshow(mask_update*255);
-%                 drawnow
-
+                %                clf(myFigDepth);
+                %                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+                                 figure(myFigMask)
+                                 imshow(mask_update*255);
+                                 drawnow
+                
             end
         end
         
@@ -268,36 +268,40 @@ for frame = 1:numel(img_files),
     %%   把跟踪的pos保存下来
     %now generate the results, starting from the tracker output!!!
     % the object has being tracked....
-            name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '_DSKCF.txt'];
-    if(tracker.cT.underOcclusion==false)     %跟踪成功
-        %accumulate the position of the DS-KCF tracker remember format [y x]
-        
-        %use the Sr scale factor (see [1] for more details) sr连续尺度系数 保存尺度的大小，即 目标的size
-        sr = scale_struct.InitialDepth / scale_struct.currDepth;
-        targ_sz = round(scale_struct.InitialTargetSize * sr);
-        
-        %保存
-        bbToPlot = floor([pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])]);
-        if(resize_image)
-            bbToPlot=bbToPlot*2;
-        end
-%         a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
-%         a=[a 0];
+    
+    if save_result_to_txt
+        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' video '_DSKCF.txt'];
+        if(tracker.cT.underOcclusion==false)     %跟踪成功
+            %accumulate the position of the DS-KCF tracker remember format [y x]
+            
+            %use the Sr scale factor (see [1] for more details) sr连续尺度系数 保存尺度的大小，即 目标的size
+            sr = scale_struct.InitialDepth / scale_struct.currDepth;
+            targ_sz = round(scale_struct.InitialTargetSize * sr);
+            
+            %保存
+            bbToPlot = floor([pos([2,1]) - targ_sz([2,1])/2, targ_sz([2,1])]);
+            if(resize_image)
+                bbToPlot=bbToPlot*2;
+            end
+            %         a=floor([bbToPlot([1 2]) bbToPlot([1 2])+bbToPlot([3 4])]);
+            %         a=[a 0];
             a=floor([ bbToPlot([1:4])  frame]);%  for c++
-        fp=fopen(name,'a');
-        fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
-        fclose(fp);
+            fp=fopen(name,'a');
+            fprintf(fp,'%d,%d,%d,%d,%d\r\n',a);%注意：\r\n为换
+            fclose(fp);
+            
+        else         %跟踪失败   使用上一次跟踪的结果，pose 和 size
+            
+            %保存
+            
+            fp=fopen(name,'a');
+            disp('NaN,NaN,NaN,NaN,1');
+            %         fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1');
+            fprintf(fp,'%s%d\r\n','NaN,NaN,NaN,NaN,',frame);
+            fclose(fp);
+            % disp('NaN,NaN,NaN,NaN,1');
+        end
         
-    else         %跟踪失败   使用上一次跟踪的结果，pose 和 size
-        
-        %保存
-
-        fp=fopen(name,'a');
-        disp('NaN,NaN,NaN,NaN,1');
-%         fprintf(fp,'%s\r\n','NaN,NaN,NaN,NaN,1');
-        fprintf(fp,'%s%d\r\n','NaN,NaN,NaN,NaN,',frame);
-        fclose(fp);
-        % disp('NaN,NaN,NaN,NaN,1');
     end
     pause();
     %更新以往的数据结构，把当前的Target赋值给以往的Target

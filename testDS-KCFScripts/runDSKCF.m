@@ -1,6 +1,5 @@
 
-clc
-clear all
+close all;clear all;clc;
 currentFolder=pwd();
 disp(currentFolder);
 %%add the DS-KCFresults
@@ -37,8 +36,8 @@ rootDestFolder=cd();
 cd(currentFolder)
 
 %now select the data folder
-%rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet/');
-rootSourceFolder=('/home/orbbec/data');
+rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet/');
+%rootSourceFolder=('/home/orbbec/data');
 cd(rootSourceFolder);
 rootSourceFolder=pwd();
 
@@ -50,12 +49,12 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=true;
+processAllVideos=false;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
     %insert video names manually!!!!
-     listVideos{1}='bear_front';
+     listVideos{1}='basketball2';
 %     listVideos{1}='new_ex_occ4';
     %listVideos{2}='zcup_move_1';
    % listVideos{1}='child_no1';    
@@ -65,7 +64,7 @@ else
 end
 
 show_visualization=true ; %show the tracking results live in a matlab figure
-
+save_result_to_txt =false;
 
 %% SETTING TRACKER'S PARAMETERS
 %  the struct "DSKCFparameters" is built to contains all the parameters it
@@ -145,7 +144,7 @@ listVideos{i}
     
     %call tracker wrapper function with all the relevant parameters
     [dsKCFoutput] =   wrapperDSKCF(video_path, depth_path,img_files, depth_files, pos, ...
-        target_sz,ground_truth, DSpara,show_visualization,listVideos{i} );
+        target_sz,ground_truth, DSpara,show_visualization,save_result_to_txt,listVideos{i} );
    
 
 

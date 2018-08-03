@@ -1,4 +1,4 @@
-% clc;clear all;close all;
+ clc;clear all;close all;
 
 
 currentFolder=pwd();
@@ -61,7 +61,7 @@ if(processAllVideos==false)
 %            listVideos{1}='child_no1';
 %            listVideos{1}='new_ex_occ4';
 %               listVideos{1}='bear_front';
-                listVideos{1}='bag1';
+                listVideos{1}='basketball2.2';
 %          listVideos{1}='face_occ5';
 %     listVideos{1}='zcup_move_1';
 %     listVideos{1}='face_occ5';

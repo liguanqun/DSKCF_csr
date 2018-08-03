@@ -1,0 +1,76 @@
+clc;clear all;close all;
+
+
+currentFolder=pwd();
+disp(currentFolder);
+%%add the DS-KCFresults
+
+result_Folder = ('/home/orbbec/dsk');
+
+%now select the data folder
+rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
+%  rootSourceFolder=('/home/orbbec/data');
+cd(rootSourceFolder);
+rootSourceFolder=pwd();
+
+
+%select all the videos in the folder
+dirInfo = dir();
+isDir = [dirInfo.isdir];
+listAllVideos = {dirInfo(isDir).name};
+listAllVideos = listAllVideos(3:end);
+
+%If you don't want to precess all the video set this to false
+processAllVideos=true;
+
+%eventually select your subset of videos
+if(processAllVideos==false)
+    %insert video names manually!!!!
+    %            listVideos{1}='child_no1';
+    %            listVideos{1}='new_ex_occ4';
+    %               listVideos{1}='bear_front';
+    listVideos{1}='basketball2.2';
+    %          listVideos{1}='face_occ5';
+    %     listVideos{1}='zcup_move_1';
+    %     listVideos{1}='face_occ5';
+    %   listVideos{1}='basketball1';
+else
+    listVideos=listAllVideos;
+end
+
+
+
+
+
+numVideo=length(listVideos);
+
+  myfigure =figure();
+  
+%For each selected sequence start to process!!!!!!
+for i=1:numVideo
+    
+    listVideos{i}
+    
+    [img_files, depth_files, pos, target_sz, init_rect,ground_truth video_path, depth_path] = ...
+        load_video_info_depthFROMMAT(rootSourceFolder, listVideos{i});
+    
+    cd(result_Folder);
+    result =  load([listVideos{i} '.txt'])
+    if numel(img_files) ==size(result,1)
+        for j=1:size(result,1)
+            
+         figure(myfigure)
+%myFig=figure('visible','off');
+%set(myFig,'resize','off');
+hold on;
+imshow(img_files);
+            
+            
+            
+        end
+    end
+    
+    
+    
+end
+

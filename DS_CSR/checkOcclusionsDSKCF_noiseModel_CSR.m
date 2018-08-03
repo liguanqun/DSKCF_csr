@@ -1,60 +1,6 @@
 function [p, depthCurr,stdNew,depthEstimated,stEstimated,minIndexReduced,LabelReg,Centers,regionIndex,LUTCC,regionIndexOBJ] ...
-    = checkOcclusionsDSKCF_noiseModel(depthMapCurr,noDataCurrent, tracker, bb)
+    = checkOcclusionsDSKCF_noiseModel_CSR(depthMapCurr,noDataCurrent, tracker, bb)
 
-%CHECKOCCLUSIONSDSKCF_NOISEMODEL function for detecting occlusions
-%
-%CHECKOCCLUSIONSDSKCF_NOISEMODEL.m is the function that detects occlusions
-%in the DSKCF tracker framework. For more information about how DSKCF
-%handles occlusions see [1]. Please note that  this function was partially
-%built extending the RGBD tracker code presented in [2] and available under
-%under Open Source MIT License at
-% http://tracking.cs.princeton.edu/code.html
-%
-%
-%  INPUT:
-%  - depthMapCurr   current depth image
-%  - noDataCurrent  mask marking missing depth data
-%  - trackerDSKCF_struct  DS-KCF tracker data structure
-%  - bb tracked region bounding box in the format [topLeftX, topLeftY,
-%  bottomRightX, bottomRightY] read as [columnIndexTopLeft,
-%   rowIndexTopLeft, columnIndexBottomRight, rowIndexBottomRight]
-%
-%  OUTPUT
-%  - p fraction of pixel belonging to the occluding object
-%  - depthEstimatedd estimated mean depth of the closest object to the camera
-%  - stEstimated estimated variance depth of the closest object to the camera
-%  - depthCurr estimated mean depth value of the target (assigned even if it is not
-%  the closest object with respect to the camera)
-%  -  stdNew estimated depth standard deviation of the target (assigned even if it is not
-%  the closest object with respect to the camera)
-%  - LabelReg    label image of the same size as the input image. For example,
-%           LabelReg==i represents the region associated with prototype C(i),
-%           where i=[1,k] (k = number of clusters).
-%   - Centers    1-by-k array of cluster centroids.
-%   - LUTCC  L-by-1 array that specifies the intensity-class relations,
-%           where L is the dynamic intensity range of the input image.
-%           Specifically, LUT(1) corresponds to class assigned to
-%           min(im(:)) and LUT(L) corresponds to the class assigned to
-%           max(im(:)).
-%   -regionIndex label of the closest object's cluster
-%   -minIndexReduced index of the clusters after area small filtering
-%   -regionIndexOBJ label of the target object's cluster
-% See also ENLARGEBB, FASTDEPTHSEGMENTATIONDSKCF_NOISEMODEL,
-% CALCULATENOISEVAR, ROIFROMBB, SINGLEFRAMEDSKCF
-%
-%
-% [1] S. Hannuna, M. Camplani, J. Hall, M. Mirmehdi, D. Damen, T.
-% Burghardt, A.Paiement, L. Tao, DS-KCF: A ~real-time tracker for RGB-D
-% data, Journal of Real-Time Image Processing
-%
-%  [2] Shuran Song and Jianxiong Xiao. Tracking Revisited using RGBD
-%  Camera: Baseline and Benchmark. 2013.
-%
-%  University of Bristol
-%  Massimo Camplani and Sion Hannuna
-%
-%  massimo.camplani@bristol.ac.uk
-%  hannuna@compsci.bristol.ac.uk
 
 bbPrev = tracker.pT.bb;
 depthPrev = tracker.pT.meanDepthObj;
@@ -95,7 +41,7 @@ depthNoData=roiFromBB(noDataCurrent,bb);
 %43(6):1560�1571, 2013
 noiseModelVector=[2.3,0.00055,0.00000235];
 
-[LabelReg,Centers,LUT,H,I,LUTCC]=fastDepthSegmentationDSKCF_noiseModel...
+[LabelReg,Centers,LUT,H,I,LUTCC]=fastDepthSegmentationDSKCF_noiseModel_CSR...
     (front_depth,3,depthNoData,1,[-1,-1,-1],1,depthPrev,stdOLD,noiseModelVector);
 
 %wrong segmentation....you must exit
@@ -115,7 +61,8 @@ tmpProp=regionprops(LabelReg,'Area');
 areaList= cat(1, tmpProp.Area);
 widthTarget=bbIn(4)-bbIn(2);
 heightTarget=bbIn(3)-bbIn(1);
-minArea=widthTarget*heightTarget*0.09;
+%  minArea=widthTarget*heightTarget*0.09;
+minArea=widthTarget*heightTarget*0.15;%lgq 20180731
 
 areaSmallIndex=areaList<minArea;
 if(sum(areaSmallIndex)==length(areaList))
