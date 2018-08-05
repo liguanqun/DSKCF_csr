@@ -1,4 +1,4 @@
-clc;clear all;close all;
+ clc;clear all;close all;
 
 
 currentFolder=pwd();
@@ -53,25 +53,25 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=true;
+processAllVideos=false;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
     %insert video names manually!!!!
-    %            listVideos{1}='child_no1';
-    %            listVideos{1}='new_ex_occ4';
-    %               listVideos{1}='bear_front';
-    listVideos{1}='bear_back';
-    %          listVideos{1}='face_occ5';
-    %     listVideos{1}='zcup_move_1';
-    %     listVideos{1}='face_occ5';
-    %   listVideos{1}='basketball1';
+%            listVideos{1}='child_no1';
+%            listVideos{1}='new_ex_occ4';
+%               listVideos{1}='bear_front';
+                listVideos{1}='bear_back';
+%          listVideos{1}='face_occ5';
+%     listVideos{1}='zcup_move_1';
+%     listVideos{1}='face_occ5';
+%   listVideos{1}='basketball1';
 else
     listVideos=listAllVideos;
 end
 
-show_visualization=false; %show the tracking results live in a matlab figure
-save_result_into_txt = true ;
+show_visualization=true; %show the tracking results live in a matlab figure
+save_result_into_txt = false ;
 
 %% SETTING TRACKER'S PARAMETERS
 padding =1.5;  %extra area surrounding the target
@@ -105,40 +105,37 @@ DSpara.w2c = w2c;
 
 numVideo=length(listVideos);
 padding =1.5;  %extra area surrounding the target
-for p =11:15
-    
+for p =1:15
+
     padding =padding +p/10;
     DSpara.padding=padding;
     
-    tmp_path = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/padding' num2str(p+15) '/' ];
-
-    mkdir(tmp_path);
-
-    %For each selected sequence start to process!!!!!!
-    for i=1:numVideo
-        
-        disp(['current padding is ' num2str(padding) '   video is  '   listVideos{i}]);
-        
-        %  tmpDestFolder=generateFolderResults(rootDestFolder,listVideos{i},feature_type);
-        
-        %转为matlab的坐标
-        %格式 ground_truth = [x,y,w,h]
-        %target_sz = [h, w];
-        %pos = [x,y] + floor(target_sz/2);
-        [img_files, depth_files, pos, target_sz, init_rect,ground_truth video_path, depth_path] = ...
-            load_video_info_depthFROMMAT(rootSourceFolder, listVideos{i});
-        
-        
-        %call tracker wrapper function with all the relevant parameters
-        [dsKCFoutput] =   wrapperDSKCF_CSR(video_path, depth_path,img_files, depth_files, pos, ...
-            target_sz, ground_truth,DSpara,show_visualization,save_result_into_txt,listVideos{i},tmp_path );
-        
-        
-        %Results using Sr in [1] use this for your comparison
-        % trackRes=[dsKCFoutput];
-        %save([tmpDestFolder '/' listVideos{i} '.txt'], 'trackRes','-ascii');
-        
-        
-    end
+%For each selected sequence start to process!!!!!!
+for i=1:numVideo
     
+    disp(['current padding is ' num2str(padding) '   video is ' ]);
+    listVideos{i}
+    %  tmpDestFolder=generateFolderResults(rootDestFolder,listVideos{i},feature_type);
+        tmp_path = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/padding' num2str(p+15) '/' ];
+        mkdir(tmp_path);
+    %转为matlab的坐标
+    %格式 ground_truth = [x,y,w,h]
+    %target_sz = [h, w];
+    %pos = [x,y] + floor(target_sz/2);
+    [img_files, depth_files, pos, target_sz, init_rect,ground_truth video_path, depth_path] = ...
+        load_video_info_depthFROMMAT(rootSourceFolder, listVideos{i});
+    
+ 
+    %call tracker wrapper function with all the relevant parameters
+     [dsKCFoutput] =   wrapperDSKCF_CSR(video_path, depth_path,img_files, depth_files, pos, ...
+         target_sz, ground_truth,DSpara,show_visualization,save_result_into_txt,listVideos{i},tmp_path );
+    
+
+    %Results using Sr in [1] use this for your comparison
+    % trackRes=[dsKCFoutput];
+    %save([tmpDestFolder '/' listVideos{i} '.txt'], 'trackRes','-ascii');
+    
+    
+end
+
 end

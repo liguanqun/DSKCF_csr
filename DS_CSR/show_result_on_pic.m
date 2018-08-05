@@ -80,7 +80,7 @@ for i=1:numVideo
                     rectangle('Position', bb,'LineWidth',2,'edgecolor','r');
                 end
             end
-            pause(0.003);
+            pause();
         end
         
     else

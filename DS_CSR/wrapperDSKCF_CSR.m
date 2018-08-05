@@ -1,5 +1,5 @@
 function [dsKCFoutput] =  wrapperDSKCF_CSR(video_path, depth_path, img_files, depth_files,...
-    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video)
+    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video,tmp_path)
 
 resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
@@ -160,7 +160,8 @@ framePrev=[]; %
     
     %DS-KCF tracker code need as input the position expressed as [y x],
     %remember this particular while reading the code!!!!!
-     frame =frame
+   
+    frame =frame
      
     [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
         singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
@@ -246,7 +247,7 @@ framePrev=[]; %
     %now generate the results, starting from the tracker output!!!
     % the object has being tracked....
     if save_result_into_txt
-        name = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/testall4/' video '.txt'];
+        name = [tmp_path video '.txt'];
         if(tracker.cT.underOcclusion==false)   %跟踪成功
             %accumulate the position of the DS-KCF tracker remember format [y x]
             
@@ -281,7 +282,7 @@ framePrev=[]; %
         end
     end
 
-%         pause();
+%          pause();
     %更新以往的数据结构，把当前的Target赋值给以往的Target
     if(frame>1)
         %previous target entries

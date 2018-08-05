@@ -29,27 +29,29 @@ p=0;
 %This is not the first frame we can start tracking!!!!!!!!!!
 if(firstFrame==false)
     
-    if(frame >170)
-        disp(' debug');
-    end
+%     if(frame >140)
+%         disp(' debug');
+%     end
+%     if(frame == 176)
+%         response_all =zeros(floor(size(imRGB,1)/4),floor(size(imRGB,2)/4));
+%         for i=1:fix(size(imRGB,1)/4)
+%             
+%             for j=1:fix(size(imRGB,2)/4)
+%                 patch = get_subwindow(imRGB, [i*4,j*4], scale_struct.windows_sizes(cScale).window_sz);
+%                 patch_depth = get_subwindow(depth, [i*4,j*4], scale_struct.windows_sizes(cScale).window_sz);
+%         [maxResponse,response,maxResponse_chann,pos,tracker.channel_discr]=detect_csr_depth_weight(patch,patch_depth,depth16Bit, [i*4,j*4],DSpara.cell_size, ...
+%             scale_struct.cos_windows(cScale).cos_window,DSpara.w2c ,tracker.chann_w, tracker.H,tracker.use_channel_wl ,tracker.pT.meanDepthObj,tracker.pT.stdDepthObj);
+%                 response_all(i,j) =maxResponse_chann;
+%                 maxResponse_chann
+%             end
+%             
+%         end
+%     end
+%     
     %no occlusion case 非遮挡的情况
     if ~tracker.pT.underOcclusion,
         
-        %         if(frame == 28)
-        %    response_all =zeros(floor(size(imRGB,1)/10),floor(size(imRGB,2)/10));
-        %    for i=1:fix(size(imRGB,1)/10)
-        %
-        %        for j=1:fix(size(imRGB,2)/10)
-        %         patch = get_subwindow(imRGB, [i*10,j*10], scale_struct.windows_sizes(cScale).window_sz);
-        %         patch_depth = get_subwindow(depth, [i*10,j*10], scale_struct.windows_sizes(cScale).window_sz);
-        %            [response,~,tracker.channel_discr]=detect_csr(patch,patch_depth, [i*10,j*10],DSpara.cell_size, ...
-        %              scale_struct.cos_windows(cScale).cos_window,DSpara.w2c ,tracker.chann_w, tracker.H  );
-        %            response_all(i,j) =max(response(:));
-        %            max(response(:))
-        %        end
-        %
-        %    end
-        %         end
+
         patch = get_subwindow(imRGB, pos, scale_struct.windows_sizes(cScale).window_sz);
         patch_depth = get_subwindow(depth, pos, scale_struct.windows_sizes(cScale).window_sz);
         
@@ -71,8 +73,9 @@ if(firstFrame==false)
             checkOcclusionsDSKCF_noiseModel_CSR(depth16Bit,noData,tracker, tracker.cT.bb);
         
         
-        disp(['weight  response ' num2str(maxResponse_chann) '/' num2str(maxResponse_chann/tracker.conf_init, '%.4f') '  p = ' num2str(p*100,'%.4f')]);
+        disp(['weight  response ' num2str(maxResponse_chann) '/' num2str(maxResponse_chann/tracker.conf_init, '%.4f') '  p = ' num2str(p*100,'%.4f') ]);
         disp(['depth target mean  and std ' num2str(tracker.cT.meanDepthObj,'%.4f') '    ' num2str(tracker.cT.stdDepthObj,'%.4f')  ]);
+        disp('   ');
         
         %  如果分割的目标在前景中，使用当前的bounding box 否则的话使用深度图目标分割提供的
         if(regionIndexOBJ==0 )
