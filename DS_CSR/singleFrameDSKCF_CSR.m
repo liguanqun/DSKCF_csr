@@ -210,12 +210,14 @@ if(firstFrame==false)
         %当前处于遮挡，分割出遮挡物体，并且初始化 这遮挡物额跟踪器
         if tracker.cT.underOcclusion,
             % initialize occlusion
-            disp(' occ occ occ occ cc');
-            [tmpOccBB] = occludingObjectSegDSKCF(depth16Bit,tracker);
+        
+            [tmpOccBB,mask_of_occ] = occludingObjectSegDSKCF(depth16Bit,tracker);
             
             if (isempty(tmpOccBB) | isnan(tmpOccBB) )
+                disp('occ but not found the mask ')
                 tracker.cT.underOcclusion = 0;
             else
+                   disp(' occ oand found the occ mask '); 
                 if tracker.cT.conf <0.15,
                     tracker.cT.bb = [];
                 end
@@ -248,7 +250,7 @@ if(firstFrame==false)
                 
                 %store pre-computed cosine window
                 tracker_Occ.cos_window = hann(size( tracker_Occ.yf,1)) * hann(size( tracker_Occ.yf,2))';
-                
+                tracker_Occ.mask = get_subwindow(mask_of_occ, [tracker_Occ.pT.posY, tracker_Occ.pT.posX],   tracker_Occ.cos_window);
                 [tracker_Occ]=singleFrameDSKCF_CSR_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
                 
                 %update target size in the current object tracker

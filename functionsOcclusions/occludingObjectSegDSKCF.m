@@ -1,4 +1,4 @@
-function [occBB] = occludingObjectSegDSKCF(depthIm,tracker)
+function [occBB,mask] = occludingObjectSegDSKCF(depthIm,tracker)
 %OCCLUDINGOBJECTSEGDSKCF function for segmenting the occluding object
 %
 %OCCLUDINGOBJECTSEGDSKCF.m is the function that segments the occluding
@@ -84,7 +84,12 @@ else if(length(tarBBProp)==1)
         end
         
     end
-    
+    if isempty(occBB) ==false
+        mask =occmask;
+    else
+        mask=[];
+        
+    end
     occBB=occBB';
     
     
