@@ -1,5 +1,5 @@
 function [dsKCFoutput] =  wrapperDSKCF_CSR(video_path, depth_path, img_files, depth_files,...
-    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video,tmp_path)
+    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video,tmp_path,thr)
 
 resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
@@ -164,7 +164,7 @@ framePrev=[]; %
     frame =frame
      
     [pos,tracker,tracker_Occ,scale_struct,DSpara_Occ,shape_struct]=...
-        singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct);
+        singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara, scale_struct,tracker_Occ,DSpara_Occ,shape_struct,thr);
     
     
    

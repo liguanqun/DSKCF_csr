@@ -53,7 +53,7 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=false;
+processAllVideos=true;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
@@ -70,9 +70,9 @@ else
     listVideos=listAllVideos;
 end
 
-show_visualization=true; %show the tracking results live in a matlab figure
-save_result_into_txt = false ;
-tmp_path = ['   ' ];
+show_visualization=false; %show the tracking results live in a matlab figure
+save_result_into_txt = true ;
+
 
 %% SETTING TRACKER'S PARAMETERS
 padding =2.3;  %extra area surrounding the target
@@ -102,16 +102,22 @@ DSpara.w2c = w2c;
 
 
 
+para_full = [0.5,0.5,0.5,0.45,0.45,0.45;
+                    0.15,0.20,0.25,0.15,0.20,0.25];
+
 %% PROCESSING LOOP
 
 numVideo=length(listVideos);
-
+for x=1:6     
+        para=para_full(:,x)
+          tmp_path = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/' num2str(para(1)*100) '_' num2str(para(2)*100) '/'  ];
+        mkdir(tmp_path);
     %For each selected sequence start to process!!!!!!
     for i=1:numVideo
         
- 
+         
         %  tmpDestFolder=generateFolderResults(rootDestFolder,listVideos{i},feature_type);
-        
+
         %转为matlab的坐标
         %格式 ground_truth = [x,y,w,h]
         %target_sz = [h, w];
@@ -122,7 +128,7 @@ numVideo=length(listVideos);
         
         %call tracker wrapper function with all the relevant parameters
         [dsKCFoutput] =   wrapperDSKCF_CSR(video_path, depth_path,img_files, depth_files, pos, ...
-            target_sz, ground_truth,DSpara,show_visualization,save_result_into_txt,listVideos{i},tmp_path );
+            target_sz, ground_truth,DSpara,show_visualization,save_result_into_txt,listVideos{i},tmp_path,para );
         
         
         %Results using Sr in [1] use this for your comparison
@@ -131,4 +137,4 @@ numVideo=length(listVideos);
         
         
     end
-    
+end

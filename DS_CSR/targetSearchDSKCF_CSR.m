@@ -102,7 +102,7 @@ else
     idx =  tarlist.Conf_class>-999;
     tarlist.bb=tarlist.bb(:,idx);
     tarlist.Conf_class=tarlist.Conf_class(idx);
-    
+    smoothFactorD_vector =smoothFactorD_vector(idx);
     if sum(idx(:))>0,
         [conf,id]=max(tarlist.Conf_class);
         if(smoothFactorD_vector(id)~=0)

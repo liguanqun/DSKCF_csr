@@ -1,5 +1,5 @@
 function [pos,tracker,tracker_Occ,scale_struct, DSpara_Occ,shape_struct]=...
-    singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct)
+    singleFrameDSKCF_CSR(firstFrame,frame,pos,frameCurr,tracker,DSpara,scale_struct,tracker_Occ,DSpara_Occ,shape_struct,thr)
 
 % im=frameCurr.gray;
 im=frameCurr.rgb;
@@ -13,8 +13,8 @@ depth16Bit=frameCurr.depth16Bit;
 % confInterval2=0.175;
 % confValue3=0.14;
 
-confInterval1=0.4;
-confInterval2=0.2;
+confInterval1=thr(1);
+confInterval2=thr(2);
 confValue3=0.14;
 
 
