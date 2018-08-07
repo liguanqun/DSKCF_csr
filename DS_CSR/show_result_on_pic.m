@@ -5,7 +5,7 @@ currentFolder=pwd();
 disp(currentFolder);
 %%add the DS-KCFresults
 
-result_Folder = ('/home/orbbec/dskcf_result_save/DSKCF_simaple/testall4');
+result_Folder = ('/home/orbbec/dskcf_result_save/DSKCF_simaple/padding23');
 
 %now select the data folder
 rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
@@ -21,7 +21,7 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=true;
+processAllVideos=false;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
@@ -29,7 +29,7 @@ if(processAllVideos==false)
     %            listVideos{1}='child_no1';
     %            listVideos{1}='new_ex_occ4';
     %               listVideos{1}='bear_front';
-    listVideos{1}='basketball2.2';
+    listVideos{1}='gre_book';
     %          listVideos{1}='face_occ5';
     %     listVideos{1}='zcup_move_1';
     %     listVideos{1}='face_occ5';
@@ -80,7 +80,7 @@ for i=1:numVideo
                     rectangle('Position', bb,'LineWidth',2,'edgecolor','r');
                 end
             end
-            pause();
+            pause(0.01);
         end
         
     else

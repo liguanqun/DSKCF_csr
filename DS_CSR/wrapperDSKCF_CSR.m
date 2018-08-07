@@ -147,11 +147,11 @@ framePrev=[]; %
         %figure initialization
         if(show_visualization)
             myFigColor=figure();
-%             myFigDepth=figure();
-             myFigMask=figure();
-%             set(myFigDepth,'resize','off');
+%              myFigDepth=figure();
+%              myFigMask=figure();
+%              set(myFigDepth,'resize','off');
             set(myFigColor,'resize','off');
-            set(myFigMask,'resize','off');
+%             set(myFigMask,'resize','off');
         end
         
         %take segmentation results for the first frame
@@ -208,15 +208,15 @@ framePrev=[]; %
         if(frame==1)
             if isempty(ground_truth)
                 manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-                 figure(myFigMask)
-                 imshow(tracker.mask*255);
+%                  manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+%                  figure(myFigMask)
+%                  imshow(tracker.mask*255);
                 
             else
                 show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-                 figure(myFigMask)
-                 imshow(tracker.mask*255);
+%                  show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
+%                  figure(myFigMask)
+%                  imshow(tracker.mask*255);
             end
         else
             if isempty(ground_truth)
@@ -224,16 +224,16 @@ framePrev=[]; %
                 manualBBdraw_OCC_WithLabelsVisualize(imRGB,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
 %                 clf(myFigDepth);
 %                 manualBBdraw_OCC_WithLabelsVisualize(depth,bbToPlot,bbOCCToPlot,'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-                 figure(myFigMask)
-                 imshow(tracker.mask*255);
+%                  figure(myFigMask)
+%                  imshow(tracker.mask*255);
                 drawnow
             else
                 clf(myFigColor);
                 show_with_ground_truth(imRGB,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigColor,frame);
-%                 clf(myFigDepth);
+%                  clf(myFigDepth);
 %                 show_with_ground_truth(depth,bbToPlot,bbOCCToPlot,ground_truth(frame,1:4),'r','y',2,'DS-KCF','Occluder',myFigDepth,frame);
-                 figure(myFigMask)
-                 imshow(tracker.mask*255);
+%                  figure(myFigMask)
+%                  imshow(tracker.mask*255);
                 drawnow
                 
             end
@@ -282,7 +282,7 @@ framePrev=[]; %
         end
     end
 
-%          pause();
+%              pause();
     %更新以往的数据结构，把当前的Target赋值给以往的Target
     if(frame>1)
         %previous target entries

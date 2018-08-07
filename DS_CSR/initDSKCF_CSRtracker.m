@@ -34,6 +34,7 @@ tracker.H = [];
 tracker.mask = [];
 tracker.use_channel_wl = true;
 tracker.conf_init = [];
+tracker.abs_conf = [];
 %previous target entries
 tracker.pT=tracker.cT;
 

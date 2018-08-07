@@ -18,7 +18,7 @@ confInterval2=0.2;
 confValue3=0.14;
 
 abs_conf =0.2;
-abs_conf_recovery =0.16;
+abs_conf_recovery =0.15;
 
 cScale=scale_struct.i;
 

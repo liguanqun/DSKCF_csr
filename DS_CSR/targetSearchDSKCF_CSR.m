@@ -1,5 +1,5 @@
 function [tarBB, occBB, tarlist, id,occmask] = targetSearchDSKCF_CSR(bb,...
-    tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue,conf_init)
+    tracker, DSpara,im,depth,depth16Bit,scale_struct,confValue,abs_conf_recovery,conf_init)
 
 tarBB = [];
 occBB=[];
@@ -59,6 +59,8 @@ centersEstimated(areaSmallIndex)=[];
 %for each target bb caculate confidience
 tarlist = struct('bb',[],'Conf_color',[],'Conf_class',[]);
 num_tar = size(tarBBList,2);
+
+abs_conf =[];
 if isempty(tarBBList),
     %disp('total occ');
 else
@@ -81,7 +83,7 @@ else
         [ response, maxResponse, maxPositionImagePlane] = maxResponseDSKCF_CSR...
             ( patch,patch_depth,tmpCenter(2:-1:1),DSpara.cell_size,scale_struct.cos_windows(scale_struct.i).cos_window,...
            DSpara.w2c,tracker.chann_w,tracker.H,size(im,1),size(im,2));
-      
+          abs_conf = [abs_conf, max(response(:))];
           maxResponse =maxResponse /conf_init;
 
        %now maxPositionImagePlane has row index and column index so.....
@@ -90,7 +92,7 @@ else
             tracker.cT.stdDepthObj);
         smoothFactorD_vector=[smoothFactorD_vector,smoothFactorD];
         conf=maxResponse*smoothFactorD;
-        disp(['search response ' num2str(maxResponse) '    weight  ' num2str(conf)])
+        disp(['target_c' num2str(abs_conf(j)) '  ' num2str(maxResponse) '    weight  ' num2str(conf)])
         reEstimatedBB(1:2)=maxPositionImagePlane(2:-1:1) - [tmpWidthTarget,tmpHeightTarget]/2;
         reEstimatedBB(3:4)=maxPositionImagePlane(2:-1:1) + [tmpWidthTarget,tmpHeightTarget]/2;
         
@@ -111,8 +113,31 @@ else
         tarlist.Conf_class=tarlist.Conf_class./smoothFactorD_vector;
         tarlist.Conf_class(isnan(tarlist.Conf_class))=0;
         %if ~isempty(id)&&conf>0.3*svm.thr, tarBB=tarlist.bb(:,id);end
-        if ~isempty(id)&&conf>confValue, tarBB=tarlist.bb(:,id);end
+         if ~isempty(id)&&conf>confValue &&abs_conf(id) >abs_conf_recovery, tarBB=tarlist.bb(:,id);end
+ % if ~isempty(id)&&conf>confValue , tarBB=tarlist.bb(:,id);end
     end
+
+%     if sum(idx(:))>0,
+%        tarlist.Conf_class=tarlist.Conf_class./smoothFactorD_vector; 
+%        tarlist.Conf_class(isnan(tarlist.Conf_class))=0;  
+%        abs_conf(isnan(abs_conf))=0;  
+%        id1 = tarlist.Conf_class >confValue;
+%        id2 =abs_conf>abs_conf_recovery;
+%        id3 =id1 & id2;
+%        if sum(id3) == 1
+%                [conf,id] =max(id3);
+%                tarBB=tarlist.bb(:,id)
+%        else
+%            if sum(id3) == 0
+%                  id =[];
+%                  tarBB=[];
+%            else
+%                  sum_conf_abs = tarlist.Conf_class + abs_conf;
+%                  [conf,id] =max(sum_conf_abs);
+%                  tarBB=tarlist.bb(:,id)             
+%            end           
+%        end
+%     end
 end
 
 end

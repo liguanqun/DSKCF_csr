@@ -1,4 +1,4 @@
-function [occBB] = occludingObjectSegDSKCF(depthIm,tracker)
+function [occBB,mask] = occludingObjectSegDSKCF(depthIm,tracker)
 %OCCLUDINGOBJECTSEGDSKCF function for segmenting the occluding object
 %
 %OCCLUDINGOBJECTSEGDSKCF.m is the function that segments the occluding
@@ -55,6 +55,8 @@ if(isempty(tarBBProp))
 else if(length(tarBBProp)==1)
         occBB=tarBBProp.BoundingBox;
         bbVector=cat(1, tarBBProp.BoundingBox)';
+        %bug bb and bbVector has wrong format
+         bbVector(3:4,:)=bbVector(1:2,:)+bbVector(3:4,:);
         overlap = bb_overlap(bb,bbVector);
         %use extrema points.....
         if(overlap>0.15)
@@ -82,7 +84,12 @@ else if(length(tarBBProp)==1)
         end
         
     end
-    
+    if isempty(occBB)==false
+%         mask = occmask(occBB(2):occBB(4),occBB(1):occBB(3));
+mask =occmask;
+    else
+        mask =[];
+    end
     occBB=occBB';
     
     

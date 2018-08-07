@@ -27,21 +27,10 @@ end
 
 cd(currentFolder)
 
-%insert here the absolute path here you want to save your results or use
-%the relative path DS-KCFresults
-rootDestFolder=('DS-KCFresults');
-
-mkdir(rootDestFolder);
-cd(rootDestFolder);
-%take absolute value and create the results folder
-rootDestFolder=cd();
-
-
-cd(currentFolder)
 
 %now select the data folder
-rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
-%  rootSourceFolder=('/home/orbbec/data');
+ rootSourceFolder=('/media/orbbec/7024AED824AEA1181/EvaluationSet');
+  %rootSourceFolder=('/home/orbbec/data');
 cd(rootSourceFolder);
 rootSourceFolder=pwd();
 
@@ -53,7 +42,7 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=true;
+processAllVideos=false;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
@@ -61,20 +50,20 @@ if(processAllVideos==false)
     %            listVideos{1}='child_no1';
     %            listVideos{1}='new_ex_occ4';
     %               listVideos{1}='bear_front';
-    listVideos{1}='bear_back';
+    listVideos{1}='cup_book';
     %          listVideos{1}='face_occ5';
     %     listVideos{1}='zcup_move_1';
     %     listVideos{1}='face_occ5';
-    %   listVideos{1}='basketball1';
+    %   listVideos{1}='basketball1'; 
 else
     listVideos=listAllVideos;
 end
 
-show_visualization=false; %show the tracking results live in a matlab figure
-save_result_into_txt = true ;
-
+show_visualization=true; %show the tracking results live in a matlab figure
+save_result_into_txt = false ;
+tmp_path = '    ';
 %% SETTING TRACKER'S PARAMETERS
-padding =1.5;  %extra area surrounding the target
+ padding =2.3;  %extra area surrounding the target
 %lambda = 1e-4;  %regularization
 output_sigma_factor = 0.1;  %spatial bandwidth (proportional to target)
 %Set the scale Sq in [1]  尺度设置
@@ -104,16 +93,12 @@ DSpara.w2c = w2c;
 %% PROCESSING LOOP
 
 numVideo=length(listVideos);
-padding =1.5;  %extra area surrounding the target
-for p =11:15
-    
-    padding =padding +p/10;
-    DSpara.padding=padding;
-    
-    tmp_path = ['/home/orbbec/dskcf_result_save/DSKCF_simaple/padding' num2str(p+15) '/' ];
 
-    mkdir(tmp_path);
+    
 
+    
+    %mkdir(tmp_path);
+    
     %For each selected sequence start to process!!!!!!
     for i=1:numVideo
         
@@ -141,4 +126,3 @@ for p =11:15
         
     end
     
-end
