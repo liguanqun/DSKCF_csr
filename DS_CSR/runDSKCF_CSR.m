@@ -42,7 +42,7 @@ listAllVideos = {dirInfo(isDir).name};
 listAllVideos = listAllVideos(3:end);
 
 %If you don't want to precess all the video set this to false
-processAllVideos=false;
+processAllVideos=true;
 
 %eventually select your subset of videos
 if(processAllVideos==false)
