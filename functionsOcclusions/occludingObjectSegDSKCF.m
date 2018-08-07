@@ -55,7 +55,9 @@ if(isempty(tarBBProp))
 else if(length(tarBBProp)==1)
         occBB=tarBBProp.BoundingBox;
         bbVector=cat(1, tarBBProp.BoundingBox)';
+        bbVector(3:4,:)=bbVector(1:2,:)+bbVector(3:4,:);
         overlap = bb_overlap(bb,bbVector);
+        
         %use extrema points.....
         if(overlap>0.15)
             occBB=ceil([occBB(1), occBB(2),occBB(1)+occBB(3),occBB(2)+occBB(4)]);
