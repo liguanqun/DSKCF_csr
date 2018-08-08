@@ -59,9 +59,9 @@ else
     listVideos=listAllVideos;
 end
 
-show_visualization=true; %show the tracking results live in a matlab figure
-save_result_into_txt = false ;
-tmp_path = '    ';
+show_visualization=false; %show the tracking results live in a matlab figure
+save_result_into_txt = true ;
+tmp_path = '/home/orbbec/dskcf_result_save/DSKCF_simaple/occ_dskcf/';
 %% SETTING TRACKER'S PARAMETERS
  padding =2.3;  %extra area surrounding the target
 %lambda = 1e-4;  %regularization
@@ -88,7 +88,33 @@ DSpara.scales=scales; % fixed scales
 DSpara.w2c = w2c;
 
 
+% for DSKCF of occ
+kernel_type='gaussian';
+kernel.type = kernel_type;
+kernel.sigma = 0.5;
+kernel.poly_a = 1;
+kernel.poly_b = 9;
 
+%Different features that can be used
+features.rawDepth= false;
+features.rawColor=false;
+features.rawConcatenate=false;
+features.rawLinear=false;
+features.hog_color = false;
+features.hog_depth = false;
+features.hog_linear = false;
+features.hog_concatenate = true;
+features.hog_orientations = 9;
+
+%copy the parameters to the struct
+DSpara_Occ.features=features; %feature selection for tracking
+DSpara_Occ.kernel=kernel; %kernel size and type
+DSpara_Occ.interp_factor=interp_factor; %interpolation factor
+DSpara_Occ.cell_size=cell_size; %HOG parameters
+DSpara_Occ.padding=1.5;
+DSpara_Occ.lambda= 1e-4; 
+DSpara_Occ.output_sigma_factor=output_sigma_factor;
+DSpara_Occ.scales=scales; % fixed scales
 
 %% PROCESSING LOOP
 
@@ -116,7 +142,7 @@ numVideo=length(listVideos);
         
         %call tracker wrapper function with all the relevant parameters
         [dsKCFoutput] =   wrapperDSKCF_CSR(video_path, depth_path,img_files, depth_files, pos, ...
-            target_sz, ground_truth,DSpara,show_visualization,save_result_into_txt,listVideos{i},tmp_path );
+            target_sz, ground_truth,DSpara,DSpara_Occ,show_visualization,save_result_into_txt,listVideos{i},tmp_path );
         
         
         %Results using Sr in [1] use this for your comparison

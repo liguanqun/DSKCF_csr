@@ -1,5 +1,5 @@
 function [dsKCFoutput] =  wrapperDSKCF_CSR(video_path, depth_path, img_files, depth_files,...
-    pos, target_sz,ground_truth,DSpara, show_visualization,save_result_into_txt,video,tmp_path)
+    pos, target_sz,ground_truth,DSpara,DSpara_Occ, show_visualization,save_result_into_txt,video,tmp_path)
 
 resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 %目标过大就缩小2倍
@@ -140,9 +140,9 @@ framePrev=[]; %
         
         %initialize structures for the occluder object
         %遮挡物体的跟踪结构跟 目标的跟踪结构 不同，增加了一些关于遮挡物的数据
-        tracker_Occ=initDSKCF_CSRtracker_occluder();
+        tracker_Occ=initDSKCFtracker_occluder();
         %跟踪器的参数相同
-        DSpara_Occ=DSpara;%these need to be resetted eventually in some parts
+%         DSpara_Occ=DSpara;%these need to be resetted eventually in some parts
         
         %figure initialization
         if(show_visualization)

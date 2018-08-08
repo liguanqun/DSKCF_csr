@@ -257,10 +257,10 @@ if(firstFrame==false)
                 tracker_Occ.cos_window = hann(size( tracker_Occ.yf,1)) * hann(size( tracker_Occ.yf,2))';
             
                     %update the mask of occ
-                mask_occ_lgq = get_subwindow(mask_occ_lgq, [tracker_Occ.pT.posY, tracker_Occ.pT.posX], tracker_Occ.window_sz);
-                tracker_Occ.mask =mask_occ_lgq;            
+%                 mask_occ_lgq = get_subwindow(mask_occ_lgq, [tracker_Occ.pT.posY, tracker_Occ.pT.posX], tracker_Occ.window_sz);
+%                 tracker_Occ.mask =mask_occ_lgq;            
                 
-                [tracker_Occ]=singleFrameDSKCF_CSR_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
+                [tracker_Occ]=singleFrameDSKCF_occluder(1,im,depth,tracker_Occ,DSpara_Occ);
                 
                 %update target size in the current object tracker
                 tracker_Occ.cT=tracker_Occ.pT;
@@ -270,7 +270,7 @@ if(firstFrame==false)
         
         
     else  %PREVIOUS FRAME UNDER OCCLUSION....上一帧处于遮挡状态     跟踪遮挡物
-        [tracker_Occ,occludedPos]=singleFrameDSKCF_CSR_occluder(0,im,depth,tracker_Occ,DSpara_Occ);
+        [tracker_Occ,occludedPos]=singleFrameDSKCF_occluder(0,im,depth,tracker_Occ,DSpara_Occ);
         
         %update occluder previous position for tracking...
         tracker_Occ.pT.posX= tracker_Occ.cT.posX;
