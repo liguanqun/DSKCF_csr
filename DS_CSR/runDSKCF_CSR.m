@@ -61,7 +61,7 @@ end
 
 show_visualization=false; %show the tracking results live in a matlab figure
 save_result_into_txt = true ;
-tmp_path = '/home/orbbec/dskcf_result_save/DSKCF_simaple/occ_dskcf/';
+tmp_path = '/home/orbbec/dskcf_result_save/DSKCF_simaple/occ_dskcf_no_abs_conf/';
 %% SETTING TRACKER'S PARAMETERS
  padding =2.3;  %extra area surrounding the target
 %lambda = 1e-4;  %regularization

@@ -199,7 +199,8 @@ if(firstFrame==false)
         tracker.mask =mask;
         
         %occlusion condition  遮挡条件
-        tracker.cT.underOcclusion =  abs(p)>0.35 && (tracker.abs_conf <abs_conf ||tracker.cT.conf<confInterval1);
+%         tracker.cT.underOcclusion =  abs(p)>0.35 && (tracker.abs_conf <abs_conf ||tracker.cT.conf<confInterval1);
+         tracker.cT.underOcclusion =  abs(p)>0.35 && tracker.cT.conf<confInterval1;
         
         if ~tracker.cT.underOcclusion
             %eventually correct the frameCurr.targetDepthFast

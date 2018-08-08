@@ -114,8 +114,8 @@ else
         tarlist.Conf_class=tarlist.Conf_class./smoothFactorD_vector;
         tarlist.Conf_class(isnan(tarlist.Conf_class))=0;
         %if ~isempty(id)&&conf>0.3*svm.thr, tarBB=tarlist.bb(:,id);end
-         if ~isempty(id)&&conf>confValue &&abs_conf(id) >abs_conf_recovery, tarBB=tarlist.bb(:,id);end
- % if ~isempty(id)&&conf>confValue , tarBB=tarlist.bb(:,id);end
+%          if ~isempty(id)&&conf>confValue &&abs_conf(id) >abs_conf_recovery, tarBB=tarlist.bb(:,id);end
+  if ~isempty(id)&&conf>confValue , tarBB=tarlist.bb(:,id);end
     end
 
 %     if sum(idx(:))>0,
